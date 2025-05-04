@@ -11,6 +11,7 @@ from rich.console import Console
 from insect import __version__
 from insect.config import handler
 from insect import core
+from insect.reporting import create_formatter
 
 # Setup logging
 logging.basicConfig(
@@ -175,6 +176,22 @@ def main(args: Optional[List[str]] = None) -> int:
             
             config = handler.load_config(config_path)
             
+            # Update config with CLI args if provided
+            if parsed_args.include_pattern:
+                config["patterns"]["include"] = parsed_args.include_pattern
+            
+            if parsed_args.exclude_pattern:
+                config["patterns"]["exclude"] = parsed_args.exclude_pattern
+            
+            if parsed_args.max_depth is not None:
+                config["general"]["max_depth"] = parsed_args.max_depth
+            
+            if parsed_args.no_secrets:
+                config["analyzers"]["secrets_analyzer"] = False
+            
+            if parsed_args.severity:
+                config["severity"]["min_level"] = parsed_args.severity
+            
             # Get enabled analyzers based on config and CLI arguments
             disabled_analyzers = parsed_args.disable or []
             enabled_analyzers = handler.get_enabled_analyzers(config, disabled_analyzers)
@@ -191,48 +208,72 @@ def main(args: Optional[List[str]] = None) -> int:
             if not metadata:  # Check if metadata is empty (scan failed)
                 console.print("\n[bold red]Scan failed[/bold red]")
                 return 1
-                
-            console.print(f"\n[bold green]Scan Completed[/bold green] in {metadata['duration_seconds']:.2f}s")
-            console.print(f"Repository: {metadata['repository']}")
-            console.print(f"Files scanned: {metadata['file_count']}")
-            console.print(f"[bold]Issues found: {metadata['finding_count']}[/bold]")
             
-            # Display findings by severity
-            severity_counts = metadata["severity_counts"]
-            if sum(severity_counts.values()) > 0:
-                console.print("\n[bold]Issues by severity:[/bold]")
-                if severity_counts["critical"] > 0:
-                    console.print(f"  [bold red]Critical: {severity_counts['critical']}[/bold red]")
-                if severity_counts["high"] > 0:
-                    console.print(f"  [red]High: {severity_counts['high']}[/red]")
-                if severity_counts["medium"] > 0:
-                    console.print(f"  [yellow]Medium: {severity_counts['medium']}[/yellow]")
-                if severity_counts["low"] > 0:
-                    console.print(f"  [blue]Low: {severity_counts['low']}[/blue]")
+            # Generate report based on format
+            output_format = parsed_args.format.lower()
+            output_path = parsed_args.output
             
-            # TODO: Add detailed findings reporting
-            # For now, just print basic info about each finding
-            if findings:
-                console.print("\n[bold]Issues Details:[/bold]")
-                for i, finding in enumerate(findings[:10], 1):  # Show at most 10 findings
-                    color = {
-                        "critical": "bold red",
-                        "high": "red",
-                        "medium": "yellow",
-                        "low": "blue"
-                    }.get(finding.severity.value, "white")
-                    
-                    console.print(f"{i}. [{color}][{finding.severity.value.upper()}][/{color}] {finding.title}")
-                    console.print(f"   {finding.location}")
-                    console.print(f"   {finding.description}")
-                    console.print()
+            try:
+                # Create formatter for the requested format
+                formatter = create_formatter(output_format, config)
                 
-                # If there are more findings than we showed
-                if len(findings) > 10:
-                    console.print(f"... and {len(findings) - 10} more issues.")
+                if output_path:
+                    # Write report to file
+                    output_file = formatter.write_report(findings, metadata, output_path)
+                    console.print(f"\n[bold green]Report written to:[/bold green] {output_file}")
+                else:
+                    # If format is text and no output file specified, use Rich for interactive output
+                    if output_format == "text":
+                        console.print(f"\n[bold green]Scan Completed[/bold green] in {metadata['duration_seconds']:.2f}s")
+                        console.print(f"Repository: {metadata['repository']}")
+                        console.print(f"Files scanned: {metadata['file_count']}")
+                        console.print(f"[bold]Issues found: {metadata['finding_count']}[/bold]")
+                        
+                        # Display findings by severity
+                        severity_counts = metadata["severity_counts"]
+                        if sum(severity_counts.values()) > 0:
+                            console.print("\n[bold]Issues by severity:[/bold]")
+                            if severity_counts["critical"] > 0:
+                                console.print(f"  [bold red]Critical: {severity_counts['critical']}[/bold red]")
+                            if severity_counts["high"] > 0:
+                                console.print(f"  [red]High: {severity_counts['high']}[/red]")
+                            if severity_counts["medium"] > 0:
+                                console.print(f"  [yellow]Medium: {severity_counts['medium']}[/yellow]")
+                            if severity_counts["low"] > 0:
+                                console.print(f"  [blue]Low: {severity_counts['low']}[/blue]")
+                        
+                        # Display detailed findings
+                        if findings:
+                            console.print("\n[bold]Issues Details:[/bold]")
+                            for i, finding in enumerate(findings[:10], 1):  # Show at most 10 findings
+                                color = {
+                                    "critical": "bold red",
+                                    "high": "red",
+                                    "medium": "yellow",
+                                    "low": "blue"
+                                }.get(finding.severity.value, "white")
+                                
+                                console.print(f"{i}. [{color}][{finding.severity.value.upper()}][/{color}] {finding.title}")
+                                console.print(f"   {finding.location}")
+                                console.print(f"   {finding.description}")
+                                console.print()
+                            
+                            # If there are more findings than we showed
+                            if len(findings) > 10:
+                                console.print(f"... and {len(findings) - 10} more issues.")
+                                console.print(f"Use --output and --format to get a full report.")
+                    else:
+                        # For other formats without output file, print to stdout
+                        report = formatter.format_findings(findings, metadata)
+                        print(report)
+            
+            except Exception as e:
+                logger.error(f"Error generating report: {e}", exc_info=True)
+                console.print(f"[bold red]Error generating report:[/bold red] {e}")
+                return 1
             
             # Return non-zero exit code if critical or high severity issues found
-            if severity_counts["critical"] > 0 or severity_counts["high"] > 0:
+            if metadata["severity_counts"]["critical"] > 0 or metadata["severity_counts"]["high"] > 0:
                 return 1
             
             return 0
