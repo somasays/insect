@@ -1,0 +1,39 @@
+# Insect Default Configuration
+
+# General settings
+[general]
+max_depth = 10
+include_hidden = false
+
+# Analyzer settings
+[analyzers]
+static = true
+config = true
+binary = true
+metadata = true
+secrets = true
+
+# File pattern settings
+[patterns]
+include = ["*"]
+exclude = [
+    "*.git/*",
+    "node_modules/*",
+    "venv/*",
+    ".venv/*",
+    "*.pyc",
+    "__pycache__/*",
+    "*.min.js",
+    "*.min.css",
+]
+
+# Severity settings
+[severity]
+min_level = "low"  # Options: low, medium, high, critical
+
+# Allowlist settings
+[allowlist]
+files = []
+directories = []
+patterns = []
+findings = []  # List of finding IDs to ignore
