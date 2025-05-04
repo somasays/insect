@@ -14,9 +14,7 @@ class TextFormatter(BaseFormatter):
 
     format_name = "text"
 
-    def format_findings(
-        self, findings: List[Finding], metadata: Dict[str, Any]
-    ) -> str:
+    def format_findings(self, findings: List[Finding], metadata: Dict[str, Any]) -> str:
         """Format findings as a text string.
 
         Args:
@@ -49,16 +47,20 @@ class TextFormatter(BaseFormatter):
             severity_table.add_column("Count")
 
             # Add rows in descending order of severity
-            severities = [("CRITICAL", "bold red"), ("HIGH", "red"), 
-                         ("MEDIUM", "yellow"), ("LOW", "blue")]
-            
+            severities = [
+                ("CRITICAL", "bold red"),
+                ("HIGH", "red"),
+                ("MEDIUM", "yellow"),
+                ("LOW", "blue"),
+            ]
+
             for sev_name, style in severities:
                 if severity_counts.get(sev_name.lower(), 0) > 0:
                     severity_table.add_row(
                         f"[{style}]{sev_name}[/{style}]",
-                        str(severity_counts.get(sev_name.lower(), 0))
+                        str(severity_counts.get(sev_name.lower(), 0)),
                     )
-            
+
             console.print(severity_table)
 
         # Issues by type
@@ -73,7 +75,7 @@ class TextFormatter(BaseFormatter):
                 type_counts.items(), key=lambda x: x[1], reverse=True
             ):
                 type_table.add_row(type_name.title(), str(count))
-            
+
             console.print(type_table)
 
         # Detailed findings
@@ -81,15 +83,20 @@ class TextFormatter(BaseFormatter):
             console.print("\n[bold]Detailed Findings:[/bold]")
 
             # Sort findings by severity (most severe first)
-            findings_by_severity = {}
+            findings_by_severity: Dict[Severity, List[Finding]] = {}
             for sev in Severity:
                 findings_by_severity[sev] = []
-            
+
             for finding in findings:
                 findings_by_severity[finding.severity].append(finding)
 
             # Severity levels in descending order
-            for severity in [Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW]:
+            for severity in [
+                Severity.CRITICAL,
+                Severity.HIGH,
+                Severity.MEDIUM,
+                Severity.LOW,
+            ]:
                 severity_findings = findings_by_severity[severity]
                 if not severity_findings:
                     continue
@@ -103,17 +110,17 @@ class TextFormatter(BaseFormatter):
                 style = style_map[severity]
 
                 console.print(f"\n[{style}]{severity.name} Severity Issues:[/{style}]")
-                
+
                 for i, finding in enumerate(severity_findings, 1):
                     console.print(f"\n{i}. [{style}]{finding.title}[/{style}]")
                     console.print(f"   ID: {finding.id}")
                     console.print(f"   Type: {finding.type.name.title()}")
                     console.print(f"   Location: {finding.location}")
                     console.print(f"   Description: {finding.description}")
-                    
+
                     if finding.remediation:
                         console.print(f"   Remediation: {finding.remediation}")
-                    
+
                     if finding.references:
                         console.print(f"   References:")
                         for ref in finding.references:

@@ -12,9 +12,9 @@ import pytest
 from insect.finding import Finding, FindingType, Location, Severity
 from insect.reporting import create_formatter
 from insect.reporting.formatters import BaseFormatter
-from insect.reporting.text_formatter import TextFormatter
-from insect.reporting.json_formatter import JsonFormatter
 from insect.reporting.html_formatter import HtmlFormatter
+from insect.reporting.json_formatter import JsonFormatter
+from insect.reporting.text_formatter import TextFormatter
 
 
 def create_test_finding() -> Finding:
@@ -66,20 +66,20 @@ def create_test_metadata() -> Dict:
 def test_create_formatter():
     """Test create_formatter factory function."""
     config = {"foo": "bar"}
-    
+
     # Test valid formats
     text_formatter = create_formatter("text", config)
     assert isinstance(text_formatter, TextFormatter)
     assert text_formatter.config == config
-    
+
     json_formatter = create_formatter("json", config)
     assert isinstance(json_formatter, JsonFormatter)
     assert json_formatter.config == config
-    
+
     html_formatter = create_formatter("html", config)
     assert isinstance(html_formatter, HtmlFormatter)
     assert html_formatter.config == config
-    
+
     # Test invalid format
     with pytest.raises(ValueError):
         create_formatter("invalid", config)
@@ -90,7 +90,7 @@ def test_base_formatter():
     config = {"foo": "bar"}
     formatter = BaseFormatter(config)
     assert formatter.config == config
-    
+
     # format_findings should raise NotImplementedError
     with pytest.raises(NotImplementedError):
         formatter.format_findings([], {})
@@ -102,7 +102,7 @@ def test_text_formatter():
     formatter = TextFormatter(config)
     findings = [create_test_finding()]
     metadata = create_test_metadata()
-    
+
     result = formatter.format_findings(findings, metadata)
     assert isinstance(result, str)
     assert "Test Finding" in result
@@ -116,10 +116,10 @@ def test_json_formatter():
     formatter = JsonFormatter(config)
     findings = [create_test_finding()]
     metadata = create_test_metadata()
-    
+
     result = formatter.format_findings(findings, metadata)
     assert isinstance(result, str)
-    
+
     # Parse the JSON to verify structure
     parsed = json.loads(result)
     assert "scan_metadata" in parsed
@@ -135,7 +135,7 @@ def test_html_formatter():
     formatter = HtmlFormatter(config)
     findings = [create_test_finding()]
     metadata = create_test_metadata()
-    
+
     result = formatter.format_findings(findings, metadata)
     assert isinstance(result, str)
     assert "<!DOCTYPE html>" in result
@@ -149,11 +149,11 @@ def test_write_report():
     formatter = TextFormatter(config)
     findings = [create_test_finding()]
     metadata = create_test_metadata()
-    
+
     # Test with no output path (returns string)
     result = formatter.write_report(findings, metadata)
     assert isinstance(result, str)
-    
+
     # Test with output path (returns Path and writes file)
     with mock.patch("builtins.open", mock.mock_open()) as mock_file:
         output_path = Path("/tmp/test_report.txt")

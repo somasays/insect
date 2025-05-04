@@ -19,9 +19,7 @@ class BaseFormatter:
         """
         self.config = config
 
-    def format_findings(
-        self, findings: List[Finding], metadata: Dict[str, Any]
-    ) -> str:
+    def format_findings(self, findings: List[Finding], metadata: Dict[str, Any]) -> str:
         """Format findings as a string.
 
         Args:
@@ -65,9 +63,7 @@ class BaseFormatter:
         return output_path
 
 
-def create_formatter(
-    format_name: str, config: Dict[str, Any]
-) -> BaseFormatter:
+def create_formatter(format_name: str, config: Dict[str, Any]) -> BaseFormatter:
     """Create a formatter instance based on format name.
 
     Args:
@@ -80,9 +76,9 @@ def create_formatter(
     Raises:
         ValueError: If format_name is not supported.
     """
-    from insect.reporting.text_formatter import TextFormatter
-    from insect.reporting.json_formatter import JsonFormatter
     from insect.reporting.html_formatter import HtmlFormatter
+    from insect.reporting.json_formatter import JsonFormatter
+    from insect.reporting.text_formatter import TextFormatter
 
     formatters = {
         "text": TextFormatter,
@@ -92,7 +88,7 @@ def create_formatter(
 
     if format_name not in formatters:
         raise ValueError(
-            f"Unsupported format: {format_name}. "  
+            f"Unsupported format: {format_name}. "
             f"Supported formats: {', '.join(formatters.keys())}"
         )
 

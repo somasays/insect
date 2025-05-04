@@ -13,9 +13,7 @@ class HtmlFormatter(BaseFormatter):
 
     format_name = "html"
 
-    def format_findings(
-        self, findings: List[Finding], metadata: Dict[str, Any]
-    ) -> str:
+    def format_findings(self, findings: List[Finding], metadata: Dict[str, Any]) -> str:
         """Format findings as an HTML string.
 
         Args:
@@ -28,25 +26,27 @@ class HtmlFormatter(BaseFormatter):
         # Convert findings to a format usable in the template
         formatted_findings = []
         for finding in findings:
-            formatted_findings.append({
-                "id": finding.id,
-                "title": finding.title,
-                "description": finding.description,
-                "severity": finding.severity.value,
-                "severity_label": finding.severity.name,
-                "type": finding.type.value,
-                "type_label": finding.type.name.title(),
-                "location": str(finding.location),
-                "location_file": str(finding.location.path),
-                "location_line": finding.location.line_start,
-                "remediation": finding.remediation or "",
-                "references": finding.references,
-                "confidence": f"{finding.confidence * 100:.0f}%",
-                "analyzer": finding.analyzer,
-                "created_at": finding.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "cwe_id": finding.cwe_id or "",
-                "cvss_score": finding.cvss_score,
-            })
+            formatted_findings.append(
+                {
+                    "id": finding.id,
+                    "title": finding.title,
+                    "description": finding.description,
+                    "severity": finding.severity.value,
+                    "severity_label": finding.severity.name,
+                    "type": finding.type.value,
+                    "type_label": finding.type.name.title(),
+                    "location": str(finding.location),
+                    "location_file": str(finding.location.path),
+                    "location_line": finding.location.line_start,
+                    "remediation": finding.remediation or "",
+                    "references": finding.references,
+                    "confidence": f"{finding.confidence * 100:.0f}%",
+                    "analyzer": finding.analyzer,
+                    "created_at": finding.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                    "cwe_id": finding.cwe_id or "",
+                    "cvss_score": finding.cvss_score,
+                }
+            )
 
         # JSON encode the findings and metadata for use in the JavaScript
         findings_json = json.dumps(formatted_findings)
@@ -56,33 +56,41 @@ class HtmlFormatter(BaseFormatter):
         severity_stats = []
         for sev in ["critical", "high", "medium", "low"]:
             count = metadata.get("severity_counts", {}).get(sev, 0)
-            severity_stats.append({
-                "name": sev.upper(),
-                "count": count,
-                "class": sev,
-            })
+            severity_stats.append(
+                {
+                    "name": sev.upper(),
+                    "count": count,
+                    "class": sev,
+                }
+            )
 
         # Create type stats for the summary
         type_stats = []
         for type_name, count in metadata.get("type_counts", {}).items():
-            type_stats.append({
-                "name": type_name.title(),
-                "count": count,
-                "class": type_name.lower(),
-            })
+            type_stats.append(
+                {
+                    "name": type_name.title(),
+                    "count": count,
+                    "class": type_name.lower(),
+                }
+            )
 
         severity_stats_json = json.dumps(severity_stats)
         type_stats_json = json.dumps(type_stats)
 
         # Generate the HTML
         template = self._get_html_template()
-        
+
         # Insert the data into the template
         html = template.replace("{{REPORT_TITLE}}", "Insect Security Report")
         html = html.replace("{{REPOSITORY}}", metadata.get("repository", "Unknown"))
         html = html.replace("{{SCAN_ID}}", metadata.get("scan_id", "Unknown"))
-        html = html.replace("{{TIMESTAMP}}", metadata.get("timestamp", datetime.now().isoformat()))
-        html = html.replace("{{DURATION}}", f"{metadata.get('duration_seconds', 0):.2f} seconds")
+        html = html.replace(
+            "{{TIMESTAMP}}", metadata.get("timestamp", datetime.now().isoformat())
+        )
+        html = html.replace(
+            "{{DURATION}}", f"{metadata.get('duration_seconds', 0):.2f} seconds"
+        )
         html = html.replace("{{FILES_SCANNED}}", str(metadata.get("file_count", 0)))
         html = html.replace("{{TOTAL_FINDINGS}}", str(metadata.get("finding_count", 0)))
         html = html.replace("{{FINDINGS_JSON}}", findings_json)

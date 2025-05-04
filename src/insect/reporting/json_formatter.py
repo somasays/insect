@@ -33,9 +33,7 @@ class JsonFormatter(BaseFormatter):
 
     format_name = "json"
 
-    def format_findings(
-        self, findings: List[Finding], metadata: Dict[str, Any]
-    ) -> str:
+    def format_findings(self, findings: List[Finding], metadata: Dict[str, Any]) -> str:
         """Format findings as a JSON string.
 
         Args:
