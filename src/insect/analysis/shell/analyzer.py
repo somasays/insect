@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Pattern
 
 from insect.analysis import BaseAnalyzer, register_analyzer
+from insect.analysis.additional_rules import ADDITIONAL_SHELL_PATTERNS
 from insect.finding import Finding, FindingType, Location, Severity
 
 logger = logging.getLogger(__name__)
@@ -293,6 +294,23 @@ SHELL_RULES = [
         cwe_id="CWE-732",
         cvss_score=5.0,
     ),
+    # Add additional shell detection rules from patterns
+    *[
+        ShellDetectionRule(
+            rule_id=rule_id,
+            title=title,
+            description=description,
+            severity=severity,
+            finding_type=finding_type,
+            regex_pattern=regex_pattern,
+            remediation=remediation,
+            references=references,
+            cwe_id=cwe_id,
+            cvss_score=cvss_score,
+        )
+        for rule_id, title, description, severity, finding_type, regex_pattern, 
+            remediation, references, cwe_id, cvss_score in ADDITIONAL_SHELL_PATTERNS
+    ],
 ]
 
 

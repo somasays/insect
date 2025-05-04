@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from insect.analysis import BaseAnalyzer, register_analyzer
+from insect.analysis.additional_rules import ADDITIONAL_JAVASCRIPT_RULES
 from insect.analysis.static_analyzer_rules import JAVASCRIPT_RULES
 from insect.analysis.static_analyzer_utils import check_tool_availability
 from insect.finding import Finding, FindingType, Location, Severity
@@ -38,9 +39,11 @@ class JavaScriptStaticAnalyzer(BaseAnalyzer):
     def __init__(self, config: Dict[str, Any]) -> None:
         """Initialize the JavaScript static analyzer."""
         super().__init__(config)
+        # Combine built-in rules with additional rules
         self.rules = [
             rule for rule in JAVASCRIPT_RULES if rule.language == "javascript"
         ]
+        self.rules.extend(ADDITIONAL_JAVASCRIPT_RULES)
         self.analyzer_config = config.get(self.name, {})
         self.min_confidence = self.analyzer_config.get("min_confidence", 0.0)
 

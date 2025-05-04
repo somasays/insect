@@ -1,5 +1,8 @@
 """
 Detection rules for static code analyzers.
+
+This module contains the primary detection rules used by static analyzers to
+identify potentially malicious code patterns and security vulnerabilities.
 """
 
 import re
@@ -264,3 +267,5 @@ JAVASCRIPT_RULES: List[StaticDetectionRule] = [
         cvss_score=4.0,
     ),
 ]
+
+# Additional rules are loaded and extended in each analyzer module
