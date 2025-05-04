@@ -57,14 +57,18 @@ class PythonStaticAnalyzer(BaseAnalyzer):
             "semgrep_args", ["--config=p/python", "--json"]
         )
 
+        # Store installation instructions for missing tools
+        self.bandit_install_instructions = None
+        self.semgrep_install_instructions = None
+
         # Check tool availability using the utility function
         if self.use_bandit:
-            self.use_bandit = check_tool_availability(
-                "bandit", self.name, required=True
+            self.use_bandit, self.bandit_install_instructions = check_tool_availability(
+                "bandit", self.name, required=False
             )
         if self.use_semgrep:
-            self.use_semgrep = check_tool_availability(
-                "semgrep", self.name, required=True
+            self.use_semgrep, self.semgrep_install_instructions = check_tool_availability(
+                "semgrep", self.name, required=False
             )
 
     def analyze_file(self, file_path: Path) -> List[Finding]:
@@ -132,6 +136,30 @@ class PythonStaticAnalyzer(BaseAnalyzer):
             List of findings detected by bandit
         """
         findings = []
+        
+        # If bandit is not available, return a finding with installation instructions
+        if not self.use_bandit:
+            if self.bandit_install_instructions:
+                findings.append(
+                    Finding(
+                        id=f"BANDIT-MISSING-{uuid.uuid4().hex[:8]}",
+                        title="Bandit is not installed",
+                        description=(
+                            "Bandit is not installed or not in PATH. Enhanced Python security "
+                            "analysis is disabled."
+                        ),
+                        severity=Severity.LOW,
+                        type=FindingType.OTHER,
+                        location=Location(path=file_path),
+                        analyzer=self.name,
+                        confidence=1.0,
+                        tags=["bandit", "dependency", "missing-tool"],
+                        remediation=self.bandit_install_instructions,
+                        cvss_score=0.0,
+                    )
+                )
+            return findings
+        
         try:
             # Use shutil.which to find full path to tool for security
             bandit_path = shutil.which("bandit")
@@ -221,6 +249,30 @@ class PythonStaticAnalyzer(BaseAnalyzer):
             List of findings detected by semgrep
         """
         findings = []
+        
+        # If semgrep is not available, return a finding with installation instructions
+        if not self.use_semgrep:
+            if self.semgrep_install_instructions:
+                findings.append(
+                    Finding(
+                        id=f"SEMGREP-MISSING-{uuid.uuid4().hex[:8]}",
+                        title="Semgrep is not installed",
+                        description=(
+                            "Semgrep is not installed or not in PATH. Enhanced Python security "
+                            "analysis is disabled."
+                        ),
+                        severity=Severity.LOW,
+                        type=FindingType.OTHER,
+                        location=Location(path=file_path),
+                        analyzer=self.name,
+                        confidence=1.0,
+                        tags=["semgrep", "dependency", "missing-tool"],
+                        remediation=self.semgrep_install_instructions,
+                        cvss_score=0.0,
+                    )
+                )
+            return findings
+            
         try:
             # Use shutil.which to find full path to tool for security
             semgrep_path = shutil.which("semgrep")

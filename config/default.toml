@@ -37,3 +37,13 @@ files = []
 directories = []
 patterns = []
 findings = []  # List of finding IDs to ignore
+
+# Cache settings
+[cache]
+enabled = true  # Enable or disable the scan cache
+cleanup_enabled = true  # Enable or disable automatic cleanup of old cache entries
+max_age_days = 30  # Maximum age of cache entries in days
+
+# Progress bar settings
+[progress]
+enabled = true  # Enable or disable the progress bar

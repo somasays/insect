@@ -23,6 +23,10 @@ class HtmlFormatter(BaseFormatter):
         Returns:
             Formatted report as an HTML string.
         """
+        # Check if we need to append dependency information
+        from insect.analysis.dependency_manager import get_dependencies_status
+        dependencies = get_dependencies_status()
+        
         # Convert findings to a format usable in the template
         formatted_findings = []
         for finding in findings:
@@ -51,6 +55,7 @@ class HtmlFormatter(BaseFormatter):
         # JSON encode the findings and metadata for use in the JavaScript
         findings_json = json.dumps(formatted_findings)
         metadata_json = json.dumps(metadata)
+        dependencies_json = json.dumps(dependencies)
 
         # Create severity stats for the summary
         severity_stats = []
@@ -97,6 +102,7 @@ class HtmlFormatter(BaseFormatter):
         html = html.replace("{{METADATA_JSON}}", metadata_json)
         html = html.replace("{{SEVERITY_STATS_JSON}}", severity_stats_json)
         html = html.replace("{{TYPE_STATS_JSON}}", type_stats_json)
+        html = html.replace("{{DEPENDENCIES_JSON}}", dependencies_json)
 
         return html
 
@@ -363,6 +369,7 @@ class HtmlFormatter(BaseFormatter):
                 <div class="tab active" data-tab="findings">Findings</div>
                 <div class="tab" data-tab="statistics">Statistics</div>
                 <div class="tab" data-tab="metadata">Metadata</div>
+                <div class="tab" data-tab="dependencies">Dependencies</div>
             </div>
 
             <div id="findings" class="tab-content active">
@@ -463,6 +470,34 @@ class HtmlFormatter(BaseFormatter):
                     </table>
                 </div>
             </div>
+            
+            <div id="dependencies" class="tab-content">
+                <div class="card">
+                    <h3>External Dependencies Status</h3>
+                    <p>These dependencies enhance Insect's scanning capabilities when installed.</p>
+                    <table id="dependencies-table">
+                        <thead>
+                            <tr>
+                                <th>Tool</th>
+                                <th>Status</th>
+                                <th>Description</th>
+                                <th>Version</th>
+                                <th>Path</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="card">
+                    <h3>Installation Instructions</h3>
+                    <div id="missing-dependencies">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -476,6 +511,7 @@ class HtmlFormatter(BaseFormatter):
         const metadata = {{METADATA_JSON}};
         const severityStats = {{SEVERITY_STATS_JSON}};
         const typeStats = {{TYPE_STATS_JSON}};
+        const dependencies = {{DEPENDENCIES_JSON}};
 
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
@@ -656,10 +692,76 @@ class HtmlFormatter(BaseFormatter):
             document.getElementById('search-input').addEventListener('input', applyFilters);
         }
 
+        // Populate dependencies tables
+        function populateDependenciesTables() {
+            // Populate dependencies table
+            const tableBody = document.querySelector('#dependencies-table tbody');
+            tableBody.innerHTML = '';
+            
+            // Status icons/classes mapping
+            const statusMap = {
+                'available': { icon: '✓', class: 'severity-low' },
+                'not_found': { icon: '✗', class: 'severity-high' },
+                'version_mismatch': { icon: '⚠', class: 'severity-medium' },
+                'broken': { icon: '✗', class: 'severity-high' }
+            };
+            
+            // Sort dependencies by status (available first, then others)
+            const dependenciesArray = Object.entries(dependencies)
+                .map(([name, info]) => ({ name, ...info }))
+                .sort((a, b) => {
+                    // Sort by status first (available at top)
+                    if (a.status === 'available' && b.status !== 'available') return -1;
+                    if (a.status !== 'available' && b.status === 'available') return 1;
+                    // Then alphabetically by name
+                    return a.name.localeCompare(b.name);
+                });
+            
+            dependenciesArray.forEach(dep => {
+                const row = document.createElement('tr');
+                const status = statusMap[dep.status] || { icon: '?', class: '' };
+                
+                row.innerHTML = `
+                    <td><strong>${dep.name}</strong></td>
+                    <td><span class="severity-badge ${status.class}">${status.icon} ${dep.status.replace('_', ' ').toUpperCase()}</span></td>
+                    <td>${dep.description}</td>
+                    <td>${dep.version}</td>
+                    <td>${dep.path}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Populate installation instructions for missing dependencies
+            const missingDepsDiv = document.getElementById('missing-dependencies');
+            missingDepsDiv.innerHTML = '';
+            
+            const missingDeps = dependenciesArray.filter(dep => dep.status !== 'available');
+            
+            if (missingDeps.length === 0) {
+                missingDepsDiv.innerHTML = '<p>All dependencies are available. No installation required.</p>';
+                return;
+            }
+            
+            missingDeps.forEach(dep => {
+                const depDiv = document.createElement('div');
+                depDiv.className = 'card';
+                depDiv.style.marginBottom = '1rem';
+                depDiv.style.padding = '1rem';
+                
+                depDiv.innerHTML = `
+                    <h4>${dep.name}</h4>
+                    <p>${dep.description}</p>
+                    <p><strong>Installation:</strong> ${dep.install}</p>
+                `;
+                missingDepsDiv.appendChild(depDiv);
+            });
+        }
+
         // Initialize the page
         document.addEventListener('DOMContentLoaded', () => {
             populateFindingsTable();
             populateStatisticsTables();
+            populateDependenciesTables();
             initializeFilters();
         });
     </script>

@@ -20,6 +20,17 @@ from insect.utils.hash_utils import (
     generate_uuid,
     normalize_path_for_hashing,
 )
+from insect.utils.cache_utils import (
+    ScanCache,
+    cache_enabled,
+    get_cache_dir,
+)
+from insect.utils.progress_utils import (
+    ProgressBar,
+    format_time,
+    format_eta,
+    get_scan_progress_formatter,
+)
 
 __all__ = [
     # File utilities
@@ -39,4 +50,13 @@ __all__ = [
     "generate_uuid",
     "generate_random_string",
     "normalize_path_for_hashing",
+    # Cache utilities
+    "ScanCache",
+    "cache_enabled",
+    "get_cache_dir",
+    # Progress utilities
+    "ProgressBar",
+    "format_time",
+    "format_eta",
+    "get_scan_progress_formatter",
 ]

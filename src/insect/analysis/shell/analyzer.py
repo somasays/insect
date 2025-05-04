@@ -340,39 +340,14 @@ class ShellScriptAnalyzer(BaseAnalyzer):
         # Configure ShellCheck usage
         self.use_shellcheck = self.analyzer_config.get("use_shellcheck", True)
         self.shellcheck_severity = self.analyzer_config.get("shellcheck_severity", "style")
+        self.shellcheck_install_instructions = None
         
-        # Check if ShellCheck is available
+        # Check if ShellCheck is available using the dependency manager
         if self.use_shellcheck:
-            self.use_shellcheck = self._check_shellcheck_availability()
-
-    def _check_shellcheck_availability(self) -> bool:
-        """Check if ShellCheck is available in the system.
-
-        Returns:
-            True if ShellCheck is available, False otherwise
-        """
-        shellcheck_path = shutil.which("shellcheck")
-        if not shellcheck_path:
-            logger.warning(
-                "ShellCheck is not installed or not in PATH. "
-                "Disabling ShellCheck integration."
+            from insect.analysis.static_analyzer_utils import check_tool_availability
+            self.use_shellcheck, self.shellcheck_install_instructions = check_tool_availability(
+                "shellcheck", self.name, required=False
             )
-            return False
-
-        # Check if ShellCheck works
-        try:
-            subprocess.run(
-                [shellcheck_path, "--version"],
-                capture_output=True, check=False, text=True
-            )
-            logger.debug(f"ShellCheck found at: {shellcheck_path}")
-            return True
-        except Exception as e:
-            logger.warning(
-                f"Failed to run ShellCheck. It might be broken or incorrectly configured. "
-                f"Error: {e}"
-            )
-            return False
 
     def analyze_file(self, file_path: Path) -> List[Finding]:
         """Analyze a shell script file for security issues and malicious patterns.
@@ -433,6 +408,30 @@ class ShellScriptAnalyzer(BaseAnalyzer):
             List of findings detected by ShellCheck
         """
         findings = []
+        
+        # If ShellCheck is not available, return a finding with installation instructions
+        if not self.use_shellcheck:
+            if self.shellcheck_install_instructions:
+                findings.append(
+                    Finding(
+                        id=f"SHELLCHECK-MISSING-{uuid.uuid4().hex[:8]}",
+                        title="ShellCheck is not installed",
+                        description=(
+                            "ShellCheck is not installed or not in PATH. Enhanced shell script "
+                            "analysis is disabled."
+                        ),
+                        severity=Severity.LOW,
+                        type=FindingType.OTHER,
+                        location=Location(path=file_path),
+                        analyzer=self.name,
+                        confidence=1.0,
+                        tags=["shellcheck", "dependency", "missing-tool"],
+                        remediation=self.shellcheck_install_instructions,
+                        cvss_score=0.0,
+                    )
+                )
+            return findings
+        
         try:
             # Use shutil.which to find full path to ShellCheck for security
             shellcheck_path = shutil.which("shellcheck")

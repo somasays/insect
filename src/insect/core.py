@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from insect.analysis import BaseAnalyzer, create_analyzer_instance, get_all_analyzer_classes
 from insect.config.handler import is_finding_allowed, should_report_severity
 from insect.finding import Finding, FindingType, Location, Severity
+from insect.utils.progress_utils import ProgressBar, get_scan_progress_formatter
 
 logger = logging.getLogger("insect.core")
 
@@ -183,12 +184,17 @@ def find_analyzers_for_file(file_path: Path, analyzers: List[BaseAnalyzer]) -> L
     return applicable_analyzers
 
 
-def analyze_file(file_path: Path, analyzers: List[BaseAnalyzer]) -> List[Finding]:
+def analyze_file(
+    file_path: Path, 
+    analyzers: List[BaseAnalyzer], 
+    scan_cache=None
+) -> List[Finding]:
     """Analyze a file with all applicable analyzers.
 
     Args:
         file_path: Path to the file.
         analyzers: List of analyzer instances to apply to this file.
+        scan_cache: Optional cache instance for faster re-scanning.
 
     Returns:
         List of findings from analyzing the file.
@@ -212,7 +218,15 @@ def analyze_file(file_path: Path, analyzers: List[BaseAnalyzer]) -> List[Finding
             if not analyzer.can_analyze_file(file_path):
                 logger.debug(f"Analyzer {analyzer.name} can't analyze {file_path}")
                 continue
-                
+            
+            # Check if we have cached results for this file and analyzer
+            if scan_cache is not None and scan_cache.is_file_cached(file_path, analyzer.name):
+                cached_findings = scan_cache.get_cached_findings(file_path, analyzer.name)
+                if cached_findings:
+                    logger.debug(f"Using cached results for {file_path} with {analyzer.name}")
+                    findings.extend(cached_findings)
+                    continue
+            
             # Measure analysis time for performance insights
             start_time = time.time()
             
@@ -225,6 +239,10 @@ def analyze_file(file_path: Path, analyzers: List[BaseAnalyzer]) -> List[Finding
                 logger.debug(
                     f"Analyzer {analyzer.name} took {analysis_time:.2f}s for {file_path}"
                 )
+            
+            # Cache the findings if a cache is provided
+            if scan_cache is not None:
+                scan_cache.cache_findings(file_path, analyzer.name, analyzer_findings)
             
             findings.extend(analyzer_findings)
             
@@ -408,6 +426,17 @@ def scan_repository(
     analyzers = create_analyzers(config, enabled_analyzers)
     logger.info(f"Created {len(analyzers)} analyzers")
 
+    # Initialize scan cache if enabled
+    scan_cache = None
+    from insect.utils.cache_utils import cache_enabled, get_cache_dir, ScanCache
+    
+    if cache_enabled(config):
+        cache_dir = get_cache_dir(config, repo_path)
+        scan_cache = ScanCache(repo_path, cache_dir)
+        logger.info(f"Scan cache initialized at {cache_dir}")
+    else:
+        logger.debug("Scan cache disabled by configuration")
+
     # Discover files
     files = discover_files(repo_path, config)
     logger.info(f"Discovered {len(files)} files to scan")
@@ -448,6 +477,7 @@ def scan_repository(
         for analyzer in repo_level_analyzers:
             try:
                 # Use the first file to trigger repository analysis
+                # We don't cache repository-level analyzers
                 repo_findings = analyze_file(files[0], [analyzer])
                 all_findings.extend(repo_findings)
                 
@@ -461,6 +491,73 @@ def scan_repository(
     processed_files = 0
     last_progress_log = 0
     
+    # Initialize progress bar if enabled
+    use_progress_bar = config.get("progress", {}).get("enabled", True)
+    progress_bar = None
+    if use_progress_bar and total_files > 0:
+        progress_bar = ProgressBar(
+            total=total_files,
+            prefix="Scanning files:",
+            length=40,
+            dynamic=True,
+        )
+        # Set custom formatter for ETA display
+        progress_bar.set_suffix_function(get_scan_progress_formatter())
+    
+    # Check for missing dependencies and notify user
+    from insect.analysis.dependency_manager import get_dependencies_status, install_missing_dependencies
+    dependencies = get_dependencies_status()
+    missing_dependencies = [name for name, status in dependencies.items() 
+                          if status["status"] != "available"]
+    
+    # Try to auto-install dependencies if option is set
+    if missing_dependencies and config.get("install_deps", False):
+        logger.info(f"Auto-installing missing dependencies: {', '.join(missing_dependencies)}")
+        
+        # Install missing dependencies
+        results = install_missing_dependencies()
+        
+        # Recalculate missing dependencies after installation
+        dependencies = get_dependencies_status()
+        missing_dependencies = [name for name, status in dependencies.items() 
+                              if status["status"] != "available"]
+        
+        # Summarize installation results
+        total_deps = len(results)
+        success = sum(1 for success in results.values() if success)
+        failed = total_deps - success
+        
+        if failed == 0:
+            logger.info(f"Successfully installed all missing dependencies")
+        else:
+            logger.warning(f"Failed to install {failed} of {total_deps} dependencies")
+    
+    if missing_dependencies:
+        logger.warning(
+            f"Some external dependencies are missing: {', '.join(missing_dependencies)}. "
+            f"Run 'insect deps' to see installation instructions."
+        )
+        
+        # Add a finding to inform users about missing dependencies
+        all_findings.append(
+            Finding(
+                id=f"DEPENDENCIES-MISSING-{uuid.uuid4().hex[:8]}",
+                title="External dependencies missing",
+                description=(
+                    f"Some external dependencies are not installed or not in PATH: "
+                    f"{', '.join(missing_dependencies)}. This limits the thoroughness of the scan."
+                ),
+                severity=Severity.LOW,
+                type=FindingType.OTHER,
+                location=Location(path=repo_path),
+                analyzer="dependency_check",
+                confidence=1.0,
+                tags=["dependency", "missing-tool"],
+                remediation="Run 'insect deps --install-deps' to automatically install missing dependencies.",
+                cvss_score=0.0,
+            )
+        )
+        
     # Analyze each file with all applicable analyzers
     for analyzer in file_level_analyzers:
         analyzer_files = analyzer_file_map[analyzer]
@@ -469,18 +566,28 @@ def scan_repository(
             
         logger.info(f"Running {analyzer.name} on {len(analyzer_files)} files")
         
+        # Start progress bar before processing files with this analyzer
+        if progress_bar and not progress_bar._start_time:
+            progress_bar.start()
+        
         for i, file_path in enumerate(analyzer_files):
             try:
-                findings = analyze_file(file_path, [analyzer])
+                # Use the scan cache if available
+                findings = analyze_file(file_path, [analyzer], scan_cache)
                 all_findings.extend(findings)
                 
                 processed_files += 1
                 
-                # Log progress at 10% intervals
-                progress_percentage = (processed_files * 100) // total_files
-                if progress_percentage >= last_progress_log + 10:
-                    last_progress_log = (progress_percentage // 10) * 10
-                    logger.info(f"Scan progress: {progress_percentage}% ({processed_files}/{total_files})")
+                # Update progress bar if enabled
+                if progress_bar:
+                    progress_bar.update()
+                
+                # Log progress at 10% intervals (when not using progress bar)
+                if not progress_bar:
+                    progress_percentage = (processed_files * 100) // total_files
+                    if progress_percentage >= last_progress_log + 10:
+                        last_progress_log = (progress_percentage // 10) * 10
+                        logger.info(f"Scan progress: {progress_percentage}% ({processed_files}/{total_files})")
                 
                 # Detailed logging on every 100th file or if findings were found
                 if i > 0 and i % 100 == 0:
@@ -491,6 +598,29 @@ def scan_repository(
             except Exception as e:
                 logger.error(f"Error analyzing {file_path} with {analyzer.name}: {str(e)}")
     
+    # Finish progress bar if it was started
+    if progress_bar and progress_bar._start_time:
+        progress_bar.finish()
+        
+    # Save the cache after scanning all files
+    if scan_cache is not None:
+        scan_cache.save_cache()
+        
+        # Log cache statistics
+        cache_stats = scan_cache.get_cache_stats()
+        logger.info(
+            f"Cache statistics: {cache_stats['hits']} hits, {cache_stats['misses']} misses, "
+            f"{cache_stats['files_skipped']} files skipped"
+        )
+        
+        # Clean old entries
+        if config.get("cache", {}).get("cleanup_enabled", True):
+            max_age_days = config.get("cache", {}).get("max_age_days", 30)
+            cleaned_entries = scan_cache.clean_old_entries(max_age_days)
+            if cleaned_entries > 0:
+                logger.info(f"Cleaned {cleaned_entries} old entries from the cache")
+                scan_cache.save_cache()  # Save again after cleanup
+    
     # Filter findings based on configuration
     filtered_findings = filter_findings(all_findings, config)
     logger.info(f"Filtered {len(all_findings) - len(filtered_findings)} findings based on configuration")
@@ -499,6 +629,10 @@ def scan_repository(
     metadata = create_scan_metadata(
         repo_path, files, filtered_findings, start_time, config, used_analyzers
     )
+    
+    # Add cache stats to metadata if available
+    if scan_cache is not None:
+        metadata["cache_stats"] = scan_cache.get_cache_stats()
     
     # Calculate time-related metrics
     files_per_second = len(files) / metadata["duration_seconds"] if metadata["duration_seconds"] > 0 else 0

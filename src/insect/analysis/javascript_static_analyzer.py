@@ -53,11 +53,14 @@ class JavaScriptStaticAnalyzer(BaseAnalyzer):
         self.semgrep_args = self.analyzer_config.get(
             "semgrep_args", ["--config=p/javascript", "--json"]
         )
+        
+        # Store installation instructions for missing tools
+        self.semgrep_install_instructions = None
 
-        # Check tool availability
+        # Check tool availability using the dependency manager
         if self.use_semgrep:
-            self.use_semgrep = check_tool_availability(
-                "semgrep", self.name, required=True
+            self.use_semgrep, self.semgrep_install_instructions = check_tool_availability(
+                "semgrep", self.name, required=False
             )
 
     def analyze_file(self, file_path: Path) -> List[Finding]:
@@ -119,6 +122,30 @@ class JavaScriptStaticAnalyzer(BaseAnalyzer):
             List of findings detected by semgrep
         """
         findings = []
+        
+        # If semgrep is not available, return a finding with installation instructions
+        if not self.use_semgrep:
+            if self.semgrep_install_instructions:
+                findings.append(
+                    Finding(
+                        id=f"SEMGREP-JS-MISSING-{uuid.uuid4().hex[:8]}",
+                        title="Semgrep is not installed",
+                        description=(
+                            "Semgrep is not installed or not in PATH. Enhanced JavaScript security "
+                            "analysis is disabled."
+                        ),
+                        severity=Severity.LOW,
+                        type=FindingType.OTHER,
+                        location=Location(path=file_path),
+                        analyzer=self.name,
+                        confidence=1.0,
+                        tags=["semgrep", "dependency", "missing-tool", "javascript"],
+                        remediation=self.semgrep_install_instructions,
+                        cvss_score=0.0,
+                    )
+                )
+            return findings
+            
         try:
             # Use shutil.which to find full path to tool for security
             semgrep_path = shutil.which("semgrep")

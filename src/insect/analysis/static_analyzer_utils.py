@@ -5,7 +5,9 @@ Utility functions for static analyzers.
 import logging
 import shutil
 import subprocess
-from typing import List, Tuple
+from typing import List, Optional, Tuple
+
+from insect.analysis.dependency_manager import DependencyStatus, check_dependency
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +40,7 @@ def check_tool_availability(
     analyzer_name: str,
     required: bool = True,
     version_args: List[str] = ["--version"],
-) -> bool:
+) -> Tuple[bool, Optional[str]]:
     """Check if a required external tool is available in the PATH.
 
     Args:
@@ -48,28 +50,29 @@ def check_tool_availability(
         version_args: Arguments to check the tool's version (e.g., ["--version"]).
 
     Returns:
-        True if the tool is found and seems operational, False otherwise.
+        Tuple containing:
+        - bool: True if the tool is found and seems operational, False otherwise.
+        - str or None: Installation instructions if tool is not available, None otherwise.
     """
-    tool_path = shutil.which(tool_name)
-    if not tool_path:
-        if required:
-            logger.warning(
-                f"{tool_name.capitalize()} is not installed or not in PATH. "
-                f"Disabling {tool_name} integration for {analyzer_name}."
-            )
-        return False
-
-    # Basic check if tool runs
-    try:
-        subprocess.run(
-            [tool_path] + version_args, capture_output=True, check=False, text=True
-        )
-        logger.debug(f"Tool '{tool_name}' found at: {tool_path} for {analyzer_name}")
-        return True
-    except Exception as e:
+    # Use the new dependency manager for checking tools
+    status, version, tool_path = check_dependency(tool_name, analyzer_name)
+    
+    if status == DependencyStatus.AVAILABLE:
+        return True, None
+    
+    # For backward compatibility, return the same simple boolean result plus installation instructions
+    if status == DependencyStatus.NOT_FOUND:
+        from insect.analysis.dependency_manager import DEPENDENCIES
+        if tool_name in DEPENDENCIES:
+            install_instructions = DEPENDENCIES[tool_name].get_install_instructions()
+            return False, install_instructions
+    
+    if status == DependencyStatus.VERSION_MISMATCH:
         logger.warning(
-            f"Failed to run '{tool_name} {' '.join(version_args)}'. "
-            f"{tool_name.capitalize()} might be broken or incorrectly configured "
-            f"for {analyzer_name}. Error: {e}"
+            f"{tool_name.capitalize()} was found but may not function correctly. "
+            f"Consider upgrading to a newer version."
         )
-        return False
+        # Still return True for version mismatch, as the tool may still work
+        return True, None
+    
+    return False, None
