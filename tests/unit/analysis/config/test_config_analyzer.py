@@ -212,16 +212,16 @@ def test_package_json_analysis(config, temp_package_json):
     finding_ids = [finding.id.split("-")[0] for finding in findings]
 
     # Check for unscoped dependency version
-    assert any(id.startswith("NPM002") for id in finding_ids)
+    assert any(finding_id.startswith("NPM002") for finding_id in finding_ids)
 
     # Check for suspicious script command
-    assert any(id.startswith("NPM003") for id in finding_ids)
+    assert any(finding_id.startswith("NPM003") for finding_id in finding_ids)
 
     # Check for hard-coded credentials
-    assert any(id.startswith("NPM005") for id in finding_ids)
+    assert any(finding_id.startswith("NPM005") for finding_id in finding_ids)
 
     # Check for identified vulnerable package
-    assert any(id.startswith("NPM001") for id in finding_ids)
+    assert any(finding_id.startswith("NPM001") for finding_id in finding_ids)
 
     # Verify vulnerable lodash is detected (either by NPM001 or other id)
     vulnerable_lodash = False
@@ -247,10 +247,10 @@ def test_requirements_txt_analysis(config, temp_requirements_txt):
     finding_ids = [finding.id.split("-")[0] for finding in findings]
 
     # Check for unscoped dependency version
-    assert any(id.startswith("PIP001") for id in finding_ids)
+    assert any(finding_id.startswith("PIP001") for finding_id in finding_ids)
 
     # Check for direct URL installation
-    assert any(id.startswith("PIP004") for id in finding_ids)
+    assert any(finding_id.startswith("PIP004") for finding_id in finding_ids)
 
     # Verify vulnerable django is detected
     vulnerable_django = False

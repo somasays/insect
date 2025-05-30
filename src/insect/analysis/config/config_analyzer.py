@@ -884,8 +884,7 @@ class ConfigAnalyzer(BaseAnalyzer):
 
                 # Check if version matches any vulnerable version
                 for vuln_version_range in KNOWN_VULNERABLE_NPM_PACKAGES[pkg]:
-                    if vuln_version_range.startswith("<"):
-                        if self._version_lt(raw_version, vuln_version_range[1:]):
+                    if vuln_version_range.startswith("<") and self._version_lt(raw_version, vuln_version_range[1:]):
                             findings.append(
                                 Finding(
                                     id=f"NPM001-{uuid.uuid4().hex[:8]}",
@@ -1130,8 +1129,7 @@ class ConfigAnalyzer(BaseAnalyzer):
                             for vuln_version_range in KNOWN_VULNERABLE_PYTHON_PACKAGES[
                                 package_name
                             ]:
-                                if vuln_version_range.startswith("<"):
-                                    if self._version_lt(
+                                if vuln_version_range.startswith("<") and self._version_lt(
                                         version, vuln_version_range[1:]
                                     ):
                                         # Create a snippet with context
@@ -1728,8 +1726,7 @@ class ConfigAnalyzer(BaseAnalyzer):
                                 for (
                                     vuln_version_range
                                 ) in KNOWN_VULNERABLE_PYTHON_PACKAGES[package_name]:
-                                    if vuln_version_range.startswith("<"):
-                                        if self._version_lt(
+                                    if vuln_version_range.startswith("<") and self._version_lt(
                                             version, vuln_version_range[1:]
                                         ):
                                             # Find line number (approximate)
@@ -1790,7 +1787,7 @@ class ConfigAnalyzer(BaseAnalyzer):
         return findings
 
     def _analyze_cargo_toml(
-        self, file_path: Path, toml_data: Dict, content: str, lines: List[str]
+        self, file_path: Path, toml_data: Dict, content: str, lines: List[str]  # noqa: ARG002
     ) -> List[Finding]:
         """Analyze a Cargo.toml file for security issues.
 

@@ -80,7 +80,7 @@ def test_create_formatter():
     assert html_formatter.config == config
 
     # Test invalid format
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Unsupported format"):
         create_formatter("invalid", config)
 
 

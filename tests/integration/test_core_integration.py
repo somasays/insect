@@ -336,7 +336,7 @@ def test_core_integration_error_handling(test_repo, mock_config, mock_analyzers)
         description = "Analyzer that raises an exception"
         supported_extensions = {".py", ".js"}
 
-        def analyze_file(self, file_path):
+        def analyze_file(self, file_path):  # noqa: ARG002
             raise RuntimeError("Simulated analyzer error")
 
     # Register our error analyzer

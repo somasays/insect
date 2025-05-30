@@ -236,13 +236,12 @@ def check_dependency(
                     break
 
         # Check minimum version if specified
-        if dependency.min_version and version:
-            if not _is_version_sufficient(version, dependency.min_version):
-                logger.warning(
-                    f"{dependency_name.capitalize()} version {version} is lower than "
-                    f"the recommended minimum version {dependency.min_version}."
-                )
-                return DependencyStatus.VERSION_MISMATCH, version, tool_path
+        if dependency.min_version and version and not _is_version_sufficient(version, dependency.min_version):
+            logger.warning(
+                f"{dependency_name.capitalize()} version {version} is lower than "
+                f"the recommended minimum version {dependency.min_version}."
+            )
+            return DependencyStatus.VERSION_MISMATCH, version, tool_path
 
         logger.debug(
             f"Tool '{dependency_name}' v{version or 'unknown'} found at: {tool_path} "

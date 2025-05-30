@@ -219,7 +219,7 @@ class ContainerAnalyzer(BaseAnalyzer):
 
         return findings
 
-    def _apply_pattern_rule(self, file_path: Path, content: str, lines: List[str], rule: ContainerSecurityRule) -> List[Finding]:
+    def _apply_pattern_rule(self, file_path: Path, content: str, lines: List[str], rule: ContainerSecurityRule) -> List[Finding]:  # noqa: ARG002
         """Apply a pattern-based rule to the content."""
         findings = []
 
@@ -426,7 +426,7 @@ class ContainerAnalyzer(BaseAnalyzer):
         return rules
 
     # Dockerfile check functions
-    def _check_vulnerable_base_image(self, file_path: Path, content: str, lines: List[str], rule: ContainerSecurityRule) -> List[Finding]:
+    def _check_vulnerable_base_image(self, file_path: Path, content: str, lines: List[str], rule: ContainerSecurityRule) -> List[Finding]:  # noqa: ARG002
         """Check for vulnerable base images."""
         findings = []
 
@@ -454,7 +454,7 @@ class ContainerAnalyzer(BaseAnalyzer):
 
         return findings
 
-    def _check_missing_healthcheck(self, file_path: Path, content: str, lines: List[str], rule: ContainerSecurityRule) -> List[Finding]:
+    def _check_missing_healthcheck(self, file_path: Path, content: str, lines: List[str], rule: ContainerSecurityRule) -> List[Finding]:  # noqa: ARG002
         """Check for missing health checks."""
         has_healthcheck = any('HEALTHCHECK' in line.upper() for line in lines)
 
@@ -474,7 +474,7 @@ class ContainerAnalyzer(BaseAnalyzer):
 
         return []
 
-    def _check_sensitive_file_copy(self, file_path: Path, content: str, lines: List[str], rule: ContainerSecurityRule) -> List[Finding]:
+    def _check_sensitive_file_copy(self, file_path: Path, content: str, lines: List[str], rule: ContainerSecurityRule) -> List[Finding]:  # noqa: ARG002
         """Check for copying sensitive files."""
         findings = []
 
@@ -555,23 +555,22 @@ class ContainerAnalyzer(BaseAnalyzer):
         for service_name, service_config in services.items():
             volumes = service_config.get('volumes', [])
             for volume in volumes:
-                if isinstance(volume, str):
+                if isinstance(volume, str) and ':' in volume:
                     # Handle short syntax
-                    if ':' in volume:
-                        host_path = volume.split(':')[0]
-                        if any(host_path.startswith(danger) for danger in dangerous_mounts):
-                            finding = self._create_finding(
-                                rule_id=rule.rule_id,
-                                title=rule.title,
-                                description=f"{rule.description}: {volume} in service '{service_name}'",
-                                severity=rule.severity,
-                                file_path=file_path,
-                                line_number=1,
-                                column_number=1,
-                                finding_type="MISCONFIG",
-                                remediation="Avoid mounting sensitive host directories"
-                            )
-                            findings.append(finding)
+                    host_path = volume.split(':')[0]
+                    if any(host_path.startswith(danger) for danger in dangerous_mounts):
+                        finding = self._create_finding(
+                            rule_id=rule.rule_id,
+                            title=rule.title,
+                            description=f"{rule.description}: {volume} in service '{service_name}'",
+                            severity=rule.severity,
+                            file_path=file_path,
+                            line_number=1,
+                            column_number=1,
+                            finding_type="MISCONFIG",
+                            remediation="Avoid mounting sensitive host directories"
+                        )
+                        findings.append(finding)
 
         return findings
 

@@ -428,9 +428,8 @@ class SecretAnalyzer(BaseAnalyzer):
                     continue
 
                 # Apply exclude patterns
-                if pattern.exclude_patterns:
-                    if any(exclude.search(secret_value) for exclude in pattern.exclude_patterns):
-                        continue
+                if pattern.exclude_patterns and any(exclude.search(secret_value) for exclude in pattern.exclude_patterns):
+                    continue
 
                 # Check entropy if threshold is specified
                 if pattern.entropy_threshold:
@@ -439,9 +438,8 @@ class SecretAnalyzer(BaseAnalyzer):
                         continue
 
                 # Check context if keywords are specified
-                if pattern.context_keywords:
-                    if not self._check_context(content, match.start(), pattern.context_keywords):
-                        continue
+                if pattern.context_keywords and not self._check_context(content, match.start(), pattern.context_keywords):
+                    continue
 
                 # Skip false positives
                 if self._is_false_positive(secret_value):
@@ -557,7 +555,7 @@ class SecretAnalyzer(BaseAnalyzer):
         """Check if a candidate string is likely a false positive."""
         return any(pattern.search(candidate) for pattern in self.false_positive_patterns)
 
-    def _calculate_entropy_severity(self, candidate: str, entropy: float) -> Severity:
+    def _calculate_entropy_severity(self, candidate: str, entropy: float) -> Severity:  # noqa: ARG002
         """Calculate severity based on entropy and string characteristics."""
         # High entropy thresholds
         if entropy >= 5.5:

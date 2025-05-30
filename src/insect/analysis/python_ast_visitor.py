@@ -199,38 +199,37 @@ class ASTVisitor(ast.NodeVisitor):
             and node.func.attr == "urlopen"
         ):
             for arg in node.args:
-                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
-                    if "http" in arg.value.lower():
-                        end_col_offset = (
-                            getattr(node, "end_col_offset", node.col_offset + 1)
-                            if hasattr(node, "end_col_offset")
-                            else node.col_offset + 1
+                if isinstance(arg, ast.Constant) and isinstance(arg.value, str) and "http" in arg.value.lower():
+                    end_col_offset = (
+                        getattr(node, "end_col_offset", node.col_offset + 1)
+                        if hasattr(node, "end_col_offset")
+                        else node.col_offset + 1
+                    )
+                    self.findings.append(
+                        Finding(
+                            id=f"PY104-{uuid.uuid4().hex[:8]}",
+                            title="Suspicious network connection",
+                            description=f"The code initiates a connection to {arg.value}, which could be malicious.",
+                            severity=Severity.HIGH,
+                            type=FindingType.SUSPICIOUS,
+                            location=Location(
+                                path=self.file_path,
+                                line_start=node.lineno,
+                                line_end=getattr(node, "end_lineno", node.lineno),
+                                column_start=node.col_offset,
+                                column_end=end_col_offset,
+                                snippet=self.get_snippet(node),
+                            ),
+                            analyzer="python_static_analyzer",
+                            confidence=0.7,
+                            references=[
+                                "https://attack.mitre.org/techniques/T1071/"
+                            ],
+                            tags=["network", "url", "python"],
+                            remediation="Verify this connection is to a legitimate service.",
+                            cwe_id="CWE-913",
+                            cvss_score=7.0,
                         )
-                        self.findings.append(
-                            Finding(
-                                id=f"PY104-{uuid.uuid4().hex[:8]}",
-                                title="Suspicious network connection",
-                                description=f"The code initiates a connection to {arg.value}, which could be malicious.",
-                                severity=Severity.HIGH,
-                                type=FindingType.SUSPICIOUS,
-                                location=Location(
-                                    path=self.file_path,
-                                    line_start=node.lineno,
-                                    line_end=getattr(node, "end_lineno", node.lineno),
-                                    column_start=node.col_offset,
-                                    column_end=end_col_offset,
-                                    snippet=self.get_snippet(node),
-                                ),
-                                analyzer="python_static_analyzer",
-                                confidence=0.7,
-                                references=[
-                                    "https://attack.mitre.org/techniques/T1071/"
-                                ],
-                                tags=["network", "url", "python"],
-                                remediation="Verify this connection is to a legitimate service.",
-                                cwe_id="CWE-913",
-                                cvss_score=7.0,
-                            )
                         )
 
         # Check for reverse shell patterns

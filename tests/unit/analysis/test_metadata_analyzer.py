@@ -143,7 +143,7 @@ class TestMetadataAnalyzer(unittest.TestCase):
         assert findings == []
 
     @patch("insect.analysis.metadata_analyzer.git.Commit")
-    def test_check_commit_message_sensitive_info(self, mock_commit_class):
+    def test_check_commit_message_sensitive_info(self, mock_commit_class):  # noqa: ARG002
         """Test detecting sensitive information in commit messages."""
         # Create analyzer
         analyzer = MetadataAnalyzer(self.config)
@@ -172,7 +172,7 @@ class TestMetadataAnalyzer(unittest.TestCase):
         assert finding.metadata["commit_hash"] == mock_commit.hexsha
 
     @patch("insect.analysis.metadata_analyzer.git.Commit")
-    def test_check_commit_time_night_commit(self, mock_commit_class):
+    def test_check_commit_time_night_commit(self, mock_commit_class):  # noqa: ARG002
         """Test detecting commits made during night hours."""
         # Create analyzer with custom night hours
         config = self.config.copy()
@@ -203,7 +203,7 @@ class TestMetadataAnalyzer(unittest.TestCase):
         assert "unusual-time" in finding.tags
 
     @patch("insect.analysis.metadata_analyzer.git.Commit")
-    def test_check_commit_size_large_commit(self, mock_commit_class):
+    def test_check_commit_size_large_commit(self, mock_commit_class):  # noqa: ARG002
         """Test detecting unusually large commits."""
         # Create analyzer with custom threshold
         config = self.config.copy()
@@ -241,7 +241,7 @@ class TestMetadataAnalyzer(unittest.TestCase):
         assert finding.metadata["threshold"] == 5
 
     @patch("insect.analysis.metadata_analyzer.git.Commit")
-    def test_check_binary_files_large_binary(self, mock_commit_class):
+    def test_check_binary_files_large_binary(self, mock_commit_class):  # noqa: ARG002
         """Test detecting large binary files in commits."""
         # Create analyzer with custom threshold
         config = self.config.copy()
