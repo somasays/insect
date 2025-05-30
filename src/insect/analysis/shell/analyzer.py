@@ -308,7 +308,7 @@ SHELL_RULES = [
             cwe_id=cwe_id,
             cvss_score=cvss_score,
         )
-        for rule_id, title, description, severity, finding_type, regex_pattern, 
+        for rule_id, title, description, severity, finding_type, regex_pattern,
             remediation, references, cwe_id, cvss_score in ADDITIONAL_SHELL_PATTERNS
     ],
 ]
@@ -341,7 +341,7 @@ class ShellScriptAnalyzer(BaseAnalyzer):
         self.use_shellcheck = self.analyzer_config.get("use_shellcheck", True)
         self.shellcheck_severity = self.analyzer_config.get("shellcheck_severity", "style")
         self.shellcheck_install_instructions = None
-        
+
         # Check if ShellCheck is available using the dependency manager
         if self.use_shellcheck:
             from insect.analysis.static_analyzer_utils import check_tool_availability
@@ -408,7 +408,7 @@ class ShellScriptAnalyzer(BaseAnalyzer):
             List of findings detected by ShellCheck
         """
         findings = []
-        
+
         # If ShellCheck is not available, return a finding with installation instructions
         if not self.use_shellcheck:
             if self.shellcheck_install_instructions:
@@ -431,7 +431,7 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                     )
                 )
             return findings
-        
+
         try:
             # Use shutil.which to find full path to ShellCheck for security
             shellcheck_path = shutil.which("shellcheck")
@@ -473,7 +473,7 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                     # Determine finding type based on code or message
                     finding_type = FindingType.OTHER
                     message = issue.get("message", "").lower()
-                    
+
                     # Security/suspicious issues
                     if any(kw in message for kw in [
                         "injection", "arbitrary", "suspicious", "security", "backdoor",
@@ -482,7 +482,7 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                         finding_type = FindingType.SUSPICIOUS
                         if severity == Severity.LOW:
                             severity = Severity.MEDIUM
-                    
+
                     # Configuration issues
                     elif any(kw in message for kw in [
                         "configuration", "undefined", "not found", "deprecated", "export"
@@ -494,13 +494,13 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                     column = issue.get("column", 1)
                     endline = issue.get("endLine", line)
                     endcolumn = issue.get("endColumn", column + 1)
-                    
+
                     # Get the snippet if available
                     snippet = issue.get("fix", {}).get("replacements", [{}])[0].get("text", "")
                     if not snippet:
                         # Use code/message as snippet if replacement text not available
                         snippet = issue.get("code", "") or message
-                    
+
                     # Confidence based on severity
                     confidence_mapping = {
                         "error": 0.9,
@@ -546,17 +546,17 @@ class ShellScriptAnalyzer(BaseAnalyzer):
 
     def _analyze_with_regex(self, file_path: Path, content: str) -> List[Finding]:
         """Analyze shell script code using regular expressions to find malicious patterns.
-        
+
         Args:
             file_path: Path to the file being analyzed
             content: Content of the file
-            
+
         Returns:
             List of findings detected through regex analysis
         """
         findings: List[Finding] = []
         lines = content.splitlines()
-        
+
         # Pattern for identifying potentially encoded payloads (base64, hex)
         base64_pattern = re.compile(r'["\' ]([A-Za-z0-9+/=]{20,})[\'".,;\)\]\}]')
         hex_pattern = re.compile(r'["\' ]([0-9a-fA-F]{20,})[\'".,;\)\]\}]')
@@ -566,14 +566,14 @@ class ShellScriptAnalyzer(BaseAnalyzer):
             r'https?://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:[:/]\S*)?)[\'"`]',
             re.IGNORECASE
         )
-        
+
         for i, line in enumerate(lines):
             # Skip comment lines
             if line.strip().startswith("#") or line.strip() == "":
                 continue
-                
+
             line_num = i + 1
-            
+
             # Check for base64 payloads
             for match in base64_pattern.finditer(line):
                 if len(match.group(1)) >= 20:  # Only consider longer base64 strings
@@ -581,7 +581,7 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                     start_idx = max(0, i - 2)
                     end_idx = min(len(lines), i + 3)
                     snippet = "\n".join(lines[start_idx:end_idx])
-                    
+
                     findings.append(Finding(
                         id=f"SH102-BASE64-{uuid.uuid4().hex[:8]}",
                         title="Potential encoded payload (Base64)",
@@ -607,14 +607,14 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                         cwe_id="CWE-506",
                         cvss_score=5.5
                     ))
-            
+
             # Check for hex payloads
             for match in hex_pattern.finditer(line):
                 # Extract snippet with some context
                 start_idx = max(0, i - 2)
                 end_idx = min(len(lines), i + 3)
                 snippet = "\n".join(lines[start_idx:end_idx])
-                
+
                 findings.append(Finding(
                     id=f"SH102-HEX-{uuid.uuid4().hex[:8]}",
                     title="Potential encoded payload (Hex)",
@@ -640,14 +640,14 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                     cwe_id="CWE-506",
                     cvss_score=5.5
                 ))
-            
+
             # Check for URL patterns
             for match in url_pattern.finditer(line):
                 # Extract snippet with some context
                 start_idx = max(0, i - 2)
                 end_idx = min(len(lines), i + 3)
                 snippet = "\n".join(lines[start_idx:end_idx])
-                
+
                 findings.append(Finding(
                     id=f"SH104-URL-{uuid.uuid4().hex[:8]}",
                     title="Suspicious network connection",
@@ -655,7 +655,7 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                         f"The script contains a URL ({match.group(0)}) that could be "
                         f"used for malicious network connections."
                     ),
-                    severity=Severity.MEDIUM, 
+                    severity=Severity.MEDIUM,
                     type=FindingType.SUSPICIOUS,
                     location=Location(
                         path=file_path,
@@ -673,7 +673,7 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                     cwe_id="CWE-913",
                     cvss_score=6.5
                 ))
-            
+
             # Check rule-based patterns
             for rule in self.rules:
                 if rule.regex_pattern:
@@ -683,7 +683,7 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                         start_idx = max(0, i - 2)
                         end_idx = min(len(lines), i + 3)
                         snippet = "\n".join(lines[start_idx:end_idx])
-                        
+
                         findings.append(Finding(
                             id=f"{rule.rule_id}-{uuid.uuid4().hex[:8]}",
                             title=rule.title,
@@ -702,8 +702,8 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                             confidence=0.7,  # Regex matches are less certain
                             references=rule.references,
                             tags=[
-                                f"rule:{rule.rule_id}", 
-                                "regex", 
+                                f"rule:{rule.rule_id}",
+                                "regex",
                                 "malicious-pattern",
                                 "shell"
                             ],
@@ -711,5 +711,5 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                             cwe_id=rule.cwe_id,
                             cvss_score=rule.cvss_score
                         ))
-        
+
         return findings

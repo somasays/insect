@@ -3,16 +3,17 @@
 from typing import Dict
 
 import pytest
+
 from insect.analysis.config.config_analyzer import ConfigAnalyzer
 
 
-@pytest.fixture()
+@pytest.fixture
 def config() -> Dict:
     """Create a basic configuration for the analyzer."""
     return {"analyzers": {"config_analyzer": True}}
 
 
-@pytest.fixture()
+@pytest.fixture
 def temp_dockerfile(tmp_path):
     """Create a temporary Dockerfile with security issues."""
     dockerfile_content = """FROM python
@@ -29,7 +30,7 @@ CMD ["python", "app.py"]
     return dockerfile_path
 
 
-@pytest.fixture()
+@pytest.fixture
 def temp_package_json(tmp_path):
     """Create a temporary package.json with security issues."""
     package_json_content = """{
@@ -57,7 +58,7 @@ def temp_package_json(tmp_path):
     return package_json_path
 
 
-@pytest.fixture()
+@pytest.fixture
 def temp_requirements_txt(tmp_path):
     """Create a temporary requirements.txt with security issues."""
     requirements_content = """# Web framework
@@ -74,7 +75,7 @@ git+https://github.com/example/insecure-package.git
     return requirements_path
 
 
-@pytest.fixture()
+@pytest.fixture
 def temp_kubernetes_yaml(tmp_path):
     """Create a temporary Kubernetes YAML with security issues."""
     k8s_content = """apiVersion: v1
@@ -105,7 +106,7 @@ spec:
     return k8s_path
 
 
-@pytest.fixture()
+@pytest.fixture
 def temp_github_actions_yaml(tmp_path):
     """Create a temporary GitHub Actions workflow with security issues."""
     actions_content = """name: Test workflow
@@ -133,7 +134,7 @@ jobs:
     return actions_path
 
 
-@pytest.fixture()
+@pytest.fixture
 def temp_pyproject_toml(tmp_path):
     """Create a temporary pyproject.toml with security issues."""
     pyproject_content = """[build-system]

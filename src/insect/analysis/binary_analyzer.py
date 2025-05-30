@@ -161,7 +161,7 @@ class BinaryAnalyzer(BaseAnalyzer):
             return 0.0
 
         # Count byte frequency
-        byte_count = {byte: 0 for byte in range(256)}
+        byte_count = dict.fromkeys(range(256), 0)
         for byte in data:
             byte_count[byte] += 1
 

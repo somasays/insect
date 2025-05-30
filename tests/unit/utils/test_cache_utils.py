@@ -1,8 +1,6 @@
 """Tests for cache_utils.py."""
 
-import json
 import os
-import shutil
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -27,7 +25,7 @@ def temp_file(temp_repo_path):
     file_path = temp_repo_path / "test_file.py"
     with open(file_path, "w") as f:
         f.write("print('Hello, world!')")
-    yield file_path
+    return file_path
 
 
 @pytest.fixture
@@ -106,11 +104,11 @@ def test_scan_cache_init(temp_repo_path):
 def test_scan_cache_save_load(temp_repo_path, temp_file):
     """Test saving and loading the cache."""
     cache = ScanCache(temp_repo_path)
-    
+
     # Initial cache should be empty
     assert "file_hashes" in cache.cache_data
     assert len(cache.cache_data["file_hashes"]) == 0
-    
+
     # Add an entry to the cache
     file_path_str = str(temp_file)
     cache.cache_data["file_hashes"][file_path_str] = {
@@ -123,11 +121,11 @@ def test_scan_cache_save_load(temp_repo_path, temp_file):
             }
         }
     }
-    
+
     # Save the cache
     cache.save_cache()
     assert cache.cache_file.exists()
-    
+
     # Load the cache in a new instance
     new_cache = ScanCache(temp_repo_path)
     assert file_path_str in new_cache.cache_data["file_hashes"]
@@ -138,10 +136,10 @@ def test_is_file_cached(temp_repo_path, temp_file):
     """Test checking if a file is cached."""
     cache = ScanCache(temp_repo_path)
     analyzer_name = "test_analyzer"
-    
+
     # File should not be cached initially
     assert not cache.is_file_cached(temp_file, analyzer_name)
-    
+
     # Add file to cache manually
     file_path_str = str(temp_file)
     cache.cache_data["file_hashes"][file_path_str] = {
@@ -154,14 +152,14 @@ def test_is_file_cached(temp_repo_path, temp_file):
             }
         }
     }
-    
+
     # File should now be cached
     with mock.patch('insect.utils.cache_utils.calculate_file_hash', return_value="test_hash"):
         assert cache.is_file_cached(temp_file, analyzer_name)
-    
+
     # File should not be cached for a different analyzer
     assert not cache.is_file_cached(temp_file, "different_analyzer")
-    
+
     # Test with modified file (different hash)
     with mock.patch('insect.utils.cache_utils.calculate_file_hash', return_value="different_hash"):
         assert not cache.is_file_cached(temp_file, analyzer_name)
@@ -172,16 +170,16 @@ def test_cache_findings(temp_repo_path, temp_file, sample_finding):
     cache = ScanCache(temp_repo_path)
     analyzer_name = "test_analyzer"
     findings = [sample_finding]
-    
+
     # Cache the findings
     with mock.patch('insect.utils.cache_utils.calculate_file_hash', return_value="test_hash"):
         cache.cache_findings(temp_file, analyzer_name, findings)
-    
+
     # Check that the findings were cached
     file_path_str = str(temp_file)
     assert file_path_str in cache.cache_data["file_hashes"]
     assert analyzer_name in cache.cache_data["file_hashes"][file_path_str]["analyzers"]
-    
+
     cached_findings = cache.cache_data["file_hashes"][file_path_str]["analyzers"][analyzer_name]["findings"]
     assert len(cached_findings) == 1
     assert cached_findings[0]["id"] == sample_finding.id
@@ -192,15 +190,15 @@ def test_get_cached_findings(temp_repo_path, temp_file, sample_finding):
     cache = ScanCache(temp_repo_path)
     analyzer_name = "test_analyzer"
     findings = [sample_finding]
-    
+
     # Cache the findings
     with mock.patch('insect.utils.cache_utils.calculate_file_hash', return_value="test_hash"):
         cache.cache_findings(temp_file, analyzer_name, findings)
-    
+
     # Get the cached findings
     with mock.patch('insect.utils.cache_utils.calculate_file_hash', return_value="test_hash"):
         cached_findings = cache.get_cached_findings(temp_file, analyzer_name)
-    
+
     # Check that the retrieved findings match the original
     assert len(cached_findings) == 1
     assert cached_findings[0].id == sample_finding.id
@@ -213,7 +211,7 @@ def test_clean_old_entries(temp_repo_path, temp_file):
     cache = ScanCache(temp_repo_path)
     analyzer_name = "test_analyzer"
     file_path_str = str(temp_file)
-    
+
     # Add a recent entry
     recent_time = datetime.now().isoformat()
     cache.cache_data["file_hashes"][file_path_str] = {
@@ -226,7 +224,7 @@ def test_clean_old_entries(temp_repo_path, temp_file):
             }
         }
     }
-    
+
     # Add an old entry for a non-existent file
     old_time = (datetime.now() - timedelta(days=31)).isoformat()
     non_existent_file = str(temp_repo_path / "non_existent.py")
@@ -240,23 +238,23 @@ def test_clean_old_entries(temp_repo_path, temp_file):
             }
         }
     }
-    
+
     # Add an old entry for an existing file
     another_analyzer = "another_analyzer"
     cache.cache_data["file_hashes"][file_path_str]["analyzers"][another_analyzer] = {
         "findings": [],
         "timestamp": old_time,
     }
-    
+
     # Clean old entries
     removed = cache.clean_old_entries(max_age_days=30)
-    
+
     # Should have removed 2 entries - the non-existent file and the old analyzer
     assert removed == 2
-    
+
     # Non-existent file should be removed
     assert non_existent_file not in cache.cache_data["file_hashes"]
-    
+
     # Old analyzer entry should be removed but recent one should remain
     assert analyzer_name in cache.cache_data["file_hashes"][file_path_str]["analyzers"]
     assert another_analyzer not in cache.cache_data["file_hashes"][file_path_str]["analyzers"]
@@ -266,7 +264,7 @@ def test_cache_stats(temp_repo_path, temp_file, sample_finding):
     """Test cache statistics tracking."""
     cache = ScanCache(temp_repo_path)
     analyzer_name = "test_analyzer"
-    
+
     # Initial stats should be zero
     assert cache.get_cache_stats() == {
         "hits": 0,
@@ -274,20 +272,20 @@ def test_cache_stats(temp_repo_path, temp_file, sample_finding):
         "files_scanned": 0,
         "files_skipped": 0,
     }
-    
+
     # First check should be a miss
     assert not cache.is_file_cached(temp_file, analyzer_name)
     assert cache.get_cache_stats()["misses"] == 1
-    
+
     # Cache the findings
     with mock.patch('insect.utils.cache_utils.calculate_file_hash', return_value="test_hash"):
         cache.cache_findings(temp_file, analyzer_name, [sample_finding])
-    
+
     # Next check should be a hit
     with mock.patch('insect.utils.cache_utils.calculate_file_hash', return_value="test_hash"):
         assert cache.is_file_cached(temp_file, analyzer_name)
     assert cache.get_cache_stats()["hits"] == 1
-    
+
     # Check for a different analyzer should be a miss
     assert not cache.is_file_cached(temp_file, "different_analyzer")
     assert cache.get_cache_stats()["misses"] == 2

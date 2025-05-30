@@ -12,9 +12,9 @@ import logging
 import os
 import re
 import uuid
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 import git
 from git import Repo
@@ -56,12 +56,12 @@ class MetadataAnalyzer(BaseAnalyzer):
         super().__init__(config)
         self.analyzer_config = config.get(self.name, {})
         self.min_confidence = self.analyzer_config.get("min_confidence", 0.0)
-        
+
         # Configure specific analyzers
         self.check_commits = self.analyzer_config.get("check_commits", True)
         self.check_contributors = self.analyzer_config.get("check_contributors", True)
         self.check_branches = self.analyzer_config.get("check_branches", True)
-        
+
         # Configure specific thresholds
         self.large_commit_threshold = self.analyzer_config.get(
             "large_commit_threshold", LARGE_COMMIT_THRESHOLD
@@ -69,56 +69,56 @@ class MetadataAnalyzer(BaseAnalyzer):
         self.large_binary_threshold = self.analyzer_config.get(
             "large_binary_threshold", LARGE_BINARY_THRESHOLD
         )
-        
+
         # Maximum commits to analyze
         self.max_commits = self.analyzer_config.get("max_commits", 100)
-        
+
         # Night time detection (can be customized)
         self.night_start_hour = self.analyzer_config.get("night_start_hour", NIGHT_START_HOUR)
         self.night_end_hour = self.analyzer_config.get("night_end_hour", NIGHT_END_HOUR)
-        
+
         # Git repository handle (initialized when needed)
         self.repo: Optional[Repo] = None
 
     def analyze_file(self, file_path: Path) -> List[Finding]:
         """
         Analyze repository metadata.
-        
+
         This method is called on a per-file basis, but for metadata analysis,
         we only need to analyze once per repository. So, we'll check if the file
         is in a git repository, and if so, analyze the repository if we haven't already.
-        
+
         Args:
             file_path: Path to the file, which is used to find the Git repository.
-            
+
         Returns:
             List of findings identified in the repository metadata.
         """
         if not self.enabled:
             return []
-        
+
         findings = []
-        
+
         try:
             # Try to get the Git repository from the file path
             repo_path = self._find_git_repository(file_path)
             if not repo_path:
                 return []
-            
+
             # If the file is in a git repository and we haven't analyzed it yet,
             # initialize the repository and analyze it
             if self.repo is None:
                 try:
                     self.repo = Repo(repo_path)
-                    
+
                     # If the repository is valid, analyze it
                     if not self.repo.bare:
                         if self.check_commits:
                             findings.extend(self._analyze_commits())
-                        
+
                         if self.check_contributors:
                             findings.extend(self._analyze_contributors())
-                        
+
                         if self.check_branches:
                             findings.extend(self._analyze_branches())
                 except git.InvalidGitRepositoryError:
@@ -139,29 +139,29 @@ class MetadataAnalyzer(BaseAnalyzer):
                     file_path, f"Failed to analyze repository metadata: {str(e)}"
                 )
             )
-        
+
         return findings
 
     def _find_git_repository(self, file_path: Path) -> Optional[str]:
         """
         Find the Git repository containing the specified file.
-        
+
         Args:
             file_path: Path to a file.
-            
+
         Returns:
             Path to the Git repository, or None if not found.
         """
         try:
             current_dir = file_path.parent.absolute()
-            
+
             # Walk up the directory tree to find .git directory
             while current_dir != current_dir.parent:
                 git_dir = current_dir / ".git"
                 if git_dir.exists() and git_dir.is_dir():
                     return str(current_dir)
                 current_dir = current_dir.parent
-                
+
             return None
         except Exception as e:
             logger.error(f"Error finding git repository: {str(e)}")
@@ -170,66 +170,66 @@ class MetadataAnalyzer(BaseAnalyzer):
     def _analyze_commits(self) -> List[Finding]:
         """
         Analyze commit history for suspicious patterns.
-        
+
         Returns:
             List of findings related to commit history.
         """
         if not self.repo:
             return []
-        
+
         findings = []
-        
+
         try:
             # Get commit history
             commits = list(self.repo.iter_commits(max_count=self.max_commits))
-            
+
             # Check for sensitive information in commit messages
             for commit in commits:
                 # Check for sensitive information in commit messages
                 findings.extend(self._check_commit_message(commit))
-                
+
                 # Check for unusual commit times
                 findings.extend(self._check_commit_time(commit))
-                
+
                 # Check for large commits
                 findings.extend(self._check_commit_size(commit))
-                
+
                 # Check for large binary files
                 findings.extend(self._check_binary_files(commit))
-                
+
         except Exception as e:
             logger.error(f"Error analyzing commit history: {str(e)}")
             findings.append(
                 self._create_error_finding(
-                    Path(self.repo.working_dir), 
+                    Path(self.repo.working_dir),
                     f"Failed to analyze commit history: {str(e)}"
                 )
             )
-        
+
         return findings
 
     def _check_commit_message(self, commit: git.Commit) -> List[Finding]:
         """
         Check commit message for sensitive information.
-        
+
         Args:
             commit: Git commit object.
-            
+
         Returns:
             List of findings related to sensitive information in commit messages.
         """
         findings = []
-        
+
         try:
             message = commit.message
-            
+
             for pattern in SENSITIVE_PATTERNS:
                 matches = re.finditer(pattern, message, re.IGNORECASE)
-                
+
                 for match in matches:
                     # Extract the matched text for the finding
                     matched_text = match.group(0)
-                    
+
                     # Create a finding for the sensitive information
                     findings.append(
                         Finding(
@@ -262,31 +262,31 @@ class MetadataAnalyzer(BaseAnalyzer):
                     )
         except Exception as e:
             logger.error(f"Error checking commit message: {str(e)}")
-        
+
         return findings
 
     def _check_commit_time(self, commit: git.Commit) -> List[Finding]:
         """
         Check for unusual commit times.
-        
+
         Args:
             commit: Git commit object.
-            
+
         Returns:
             List of findings related to unusual commit times.
         """
         findings = []
-        
+
         try:
             # Check for commits made during night hours
             commit_time = commit.committed_datetime.time()
-            
+
             # Logic to handle night hours spanning midnight
             if self.night_start_hour > self.night_end_hour:
                 is_night = commit_time.hour >= self.night_start_hour or commit_time.hour < self.night_end_hour
             else:
                 is_night = self.night_start_hour <= commit_time.hour < self.night_end_hour
-                
+
             if is_night:
                 findings.append(
                     Finding(
@@ -320,30 +320,30 @@ class MetadataAnalyzer(BaseAnalyzer):
                 )
         except Exception as e:
             logger.error(f"Error checking commit time: {str(e)}")
-        
+
         return findings
 
     def _check_commit_size(self, commit: git.Commit) -> List[Finding]:
         """
         Check for unusually large commits.
-        
+
         Args:
             commit: Git commit object.
-            
+
         Returns:
             List of findings related to unusually large commits.
         """
         findings = []
-        
+
         try:
             # For efficiency, we only check if we have parents to compare against
             if not commit.parents:
                 return []
-            
+
             # Get the diff between this commit and its parent
             parent = commit.parents[0]
             diffs = parent.diff(commit)
-            
+
             # Check if the commit modifies too many files
             if len(diffs) > self.large_commit_threshold:
                 findings.append(
@@ -379,41 +379,41 @@ class MetadataAnalyzer(BaseAnalyzer):
                 )
         except Exception as e:
             logger.error(f"Error checking commit size: {str(e)}")
-        
+
         return findings
 
     def _check_binary_files(self, commit: git.Commit) -> List[Finding]:
         """
         Check for large binary files in commits.
-        
+
         Args:
             commit: Git commit object.
-            
+
         Returns:
             List of findings related to binary files.
         """
         findings = []
-        
+
         try:
             # For efficiency, we only check if we have parents to compare against
             if not commit.parents:
                 return []
-            
+
             # Get the diff between this commit and its parent
             parent = commit.parents[0]
             diffs = parent.diff(commit)
-            
+
             # Check for binary files
             for diff in diffs:
                 # Skip if not a binary file or if deleted
                 if not diff.b_blob or diff.deleted_file:
                     continue
-                
+
                 # Check if it's a binary file and exceeds size threshold
                 if diff.b_blob.size > self.large_binary_threshold:
                     # Get the file path
                     file_path = diff.b_path if diff.b_path else "unknown"
-                    
+
                     findings.append(
                         Finding(
                             id=str(uuid.uuid4()),
@@ -450,36 +450,36 @@ class MetadataAnalyzer(BaseAnalyzer):
                     )
         except Exception as e:
             logger.error(f"Error checking binary files: {str(e)}")
-        
+
         return findings
 
     def _analyze_contributors(self) -> List[Finding]:
         """
         Analyze contributor patterns for suspicious activity.
-        
+
         Returns:
             List of findings related to contributor patterns.
         """
         if not self.repo:
             return []
-        
+
         findings = []
-        
+
         try:
             # Get all commit authors
             authors = {}
             commits = list(self.repo.iter_commits(max_count=self.max_commits))
-            
+
             # Count commits per author
             for commit in commits:
                 author_identity = f"{commit.author.name} <{commit.author.email}>"
                 authors[author_identity] = authors.get(author_identity, 0) + 1
-            
+
             # Check for one-time contributors (possibly suspicious)
             one_time_contributors = [
                 (author, count) for author, count in authors.items() if count == 1
             ]
-            
+
             if one_time_contributors:
                 # Find which commits these contributors made
                 one_time_commits = {}
@@ -487,7 +487,7 @@ class MetadataAnalyzer(BaseAnalyzer):
                     author_identity = f"{commit.author.name} <{commit.author.email}>"
                     if author_identity in [a[0] for a in one_time_contributors]:
                         one_time_commits[author_identity] = commit.hexsha
-                
+
                 findings.append(
                     Finding(
                         id=str(uuid.uuid4()),
@@ -520,34 +520,34 @@ class MetadataAnalyzer(BaseAnalyzer):
             logger.error(f"Error analyzing contributors: {str(e)}")
             findings.append(
                 self._create_error_finding(
-                    Path(self.repo.working_dir), 
+                    Path(self.repo.working_dir),
                     f"Failed to analyze contributors: {str(e)}"
                 )
             )
-        
+
         return findings
 
     def _analyze_branches(self) -> List[Finding]:
         """
         Analyze branch patterns for potential issues.
-        
+
         Returns:
             List of findings related to branch patterns.
         """
         if not self.repo:
             return []
-        
+
         findings = []
-        
+
         try:
             # Get all branches
             branches = self.repo.branches
-            
+
             # Check for suspicious branch names
             suspicious_terms = [
                 'backdoor', 'bypass', 'hack', 'malware', 'exploit', 'temp', 'hidden'
             ]
-            
+
             suspicious_branches = []
             for branch in branches:
                 branch_name = branch.name.lower()
@@ -555,7 +555,7 @@ class MetadataAnalyzer(BaseAnalyzer):
                     if term in branch_name:
                         suspicious_branches.append(branch.name)
                         break
-            
+
             if suspicious_branches:
                 findings.append(
                     Finding(
@@ -585,7 +585,7 @@ class MetadataAnalyzer(BaseAnalyzer):
                         ),
                     )
                 )
-            
+
             # Check for stale branches
             current_time = datetime.now()
             stale_branches = []
@@ -594,7 +594,7 @@ class MetadataAnalyzer(BaseAnalyzer):
                     # Get the latest commit on the branch
                     latest_commit = next(self.repo.iter_commits(branch.name, max_count=1))
                     commit_time = latest_commit.committed_datetime
-                    
+
                     # Check if the branch hasn't been updated in over 6 months
                     time_difference = current_time - commit_time.replace(tzinfo=None)
                     if time_difference > timedelta(days=180):
@@ -606,7 +606,7 @@ class MetadataAnalyzer(BaseAnalyzer):
                 except (git.GitCommandError, StopIteration):
                     # Skip branches with no commits
                     continue
-            
+
             if stale_branches:
                 findings.append(
                     Finding(
@@ -639,21 +639,21 @@ class MetadataAnalyzer(BaseAnalyzer):
             logger.error(f"Error analyzing branches: {str(e)}")
             findings.append(
                 self._create_error_finding(
-                    Path(self.repo.working_dir), 
+                    Path(self.repo.working_dir),
                     f"Failed to analyze branches: {str(e)}"
                 )
             )
-        
+
         return findings
 
     def _create_error_finding(self, file_path: Path, error_message: str) -> Finding:
         """
         Create an error finding.
-        
+
         Args:
             file_path: Path to the file or directory associated with the error.
             error_message: Error message.
-            
+
         Returns:
             Error finding.
         """
@@ -667,4 +667,4 @@ class MetadataAnalyzer(BaseAnalyzer):
             analyzer=self.name,
             confidence=1.0,
             tags=["analyzer-error"],
-        ) 
+        )

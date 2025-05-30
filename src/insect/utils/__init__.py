@@ -1,6 +1,11 @@
 """Utility functions for the Insect security scanner."""
 
 # Import common utilities from modules
+from insect.utils.cache_utils import (
+    ScanCache,
+    cache_enabled,
+    get_cache_dir,
+)
 from insect.utils.file_utils import (
     BINARY_FILE_EXTENSIONS,
     SECRET_PATTERNS,
@@ -20,15 +25,10 @@ from insect.utils.hash_utils import (
     generate_uuid,
     normalize_path_for_hashing,
 )
-from insect.utils.cache_utils import (
-    ScanCache,
-    cache_enabled,
-    get_cache_dir,
-)
 from insect.utils.progress_utils import (
     ProgressBar,
-    format_time,
     format_eta,
+    format_time,
     get_scan_progress_formatter,
 )
 

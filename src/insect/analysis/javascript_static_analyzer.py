@@ -53,7 +53,7 @@ class JavaScriptStaticAnalyzer(BaseAnalyzer):
         self.semgrep_args = self.analyzer_config.get(
             "semgrep_args", ["--config=p/javascript", "--json"]
         )
-        
+
         # Store installation instructions for missing tools
         self.semgrep_install_instructions = None
 
@@ -122,7 +122,7 @@ class JavaScriptStaticAnalyzer(BaseAnalyzer):
             List of findings detected by semgrep
         """
         findings = []
-        
+
         # If semgrep is not available, return a finding with installation instructions
         if not self.use_semgrep:
             if self.semgrep_install_instructions:
@@ -145,7 +145,7 @@ class JavaScriptStaticAnalyzer(BaseAnalyzer):
                     )
                 )
             return findings
-            
+
         try:
             # Use shutil.which to find full path to tool for security
             semgrep_path = shutil.which("semgrep")

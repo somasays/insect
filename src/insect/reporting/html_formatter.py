@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from typing import Any, Dict, List
 
-from insect.finding import Finding, Severity
+from insect.finding import Finding
 from insect.reporting.formatters import BaseFormatter
 
 
@@ -26,7 +26,7 @@ class HtmlFormatter(BaseFormatter):
         # Check if we need to append dependency information
         from insect.analysis.dependency_manager import get_dependencies_status
         dependencies = get_dependencies_status()
-        
+
         # Convert findings to a format usable in the template
         formatted_findings = []
         for finding in findings:
@@ -470,7 +470,7 @@ class HtmlFormatter(BaseFormatter):
                     </table>
                 </div>
             </div>
-            
+
             <div id="dependencies" class="tab-content">
                 <div class="card">
                     <h3>External Dependencies Status</h3>
@@ -490,7 +490,7 @@ class HtmlFormatter(BaseFormatter):
                         </tbody>
                     </table>
                 </div>
-                
+
                 <div class="card">
                     <h3>Installation Instructions</h3>
                     <div id="missing-dependencies">
@@ -518,7 +518,7 @@ class HtmlFormatter(BaseFormatter):
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                
+
                 tab.classList.add('active');
                 document.getElementById(tab.dataset.tab).classList.add('active');
             });
@@ -547,7 +547,7 @@ class HtmlFormatter(BaseFormatter):
                         <button class="toggle-details" data-index="${index}">Details</button>
                     </td>
                 `;
-                
+
                 const detailsRow = document.createElement('tr');
                 detailsRow.innerHTML = `
                     <td colspan="5">
@@ -555,31 +555,31 @@ class HtmlFormatter(BaseFormatter):
                             <dl>
                                 <dt>ID:</dt>
                                 <dd>${finding.id}</dd>
-                                
+
                                 <dt>Description:</dt>
                                 <dd>${finding.description}</dd>
-                                
+
                                 <dt>Severity:</dt>
                                 <dd><span class="severity-badge severity-${finding.severity}">${finding.severity_label}</span></dd>
-                                
+
                                 <dt>Type:</dt>
                                 <dd>${finding.type_label}</dd>
-                                
+
                                 <dt>Location:</dt>
                                 <dd>${finding.location}</dd>
-                                
+
                                 <dt>Analyzer:</dt>
                                 <dd>${finding.analyzer}</dd>
-                                
+
                                 <dt>Confidence:</dt>
                                 <dd>${finding.confidence}</dd>
-                                
+
                                 ${finding.remediation ? `<dt>Remediation:</dt><dd>${finding.remediation}</dd>` : ''}
-                                
+
                                 ${finding.cwe_id ? `<dt>CWE ID:</dt><dd>${finding.cwe_id}</dd>` : ''}
-                                
+
                                 ${finding.cvss_score ? `<dt>CVSS Score:</dt><dd>${finding.cvss_score}</dd>` : ''}
-                                
+
                                 ${finding.references && finding.references.length > 0 ? `
                                     <dt>References:</dt>
                                     <dd>
@@ -591,7 +591,7 @@ class HtmlFormatter(BaseFormatter):
                         </div>
                     </td>
                 `;
-                
+
                 tableBody.appendChild(row);
                 tableBody.appendChild(detailsRow);
             });
@@ -601,7 +601,7 @@ class HtmlFormatter(BaseFormatter):
                 button.addEventListener('click', () => {
                     const index = button.dataset.index;
                     const detailsElement = document.getElementById(`details-${index}`);
-                    
+
                     if (detailsElement.style.display === 'block') {
                         detailsElement.style.display = 'none';
                         button.textContent = 'Details';
@@ -618,7 +618,7 @@ class HtmlFormatter(BaseFormatter):
             // Severity stats
             const severityTableBody = document.querySelector('#severity-table tbody');
             severityTableBody.innerHTML = '';
-            
+
             severityStats.forEach(stat => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -631,7 +631,7 @@ class HtmlFormatter(BaseFormatter):
             // Type stats
             const typeTableBody = document.querySelector('#type-table tbody');
             typeTableBody.innerHTML = '';
-            
+
             typeStats.forEach(stat => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -647,28 +647,28 @@ class HtmlFormatter(BaseFormatter):
             const severityFilter = document.getElementById('severity-filter').value;
             const typeFilter = document.getElementById('type-filter').value;
             const searchText = document.getElementById('search-input').value.toLowerCase();
-            
+
             let filteredFindings = findings;
-            
+
             // Apply severity filter
             if (severityFilter !== 'all') {
                 filteredFindings = filteredFindings.filter(finding => finding.severity === severityFilter);
             }
-            
+
             // Apply type filter
             if (typeFilter !== 'all') {
                 filteredFindings = filteredFindings.filter(finding => finding.type === typeFilter);
             }
-            
+
             // Apply search filter
             if (searchText) {
-                filteredFindings = filteredFindings.filter(finding => 
+                filteredFindings = filteredFindings.filter(finding =>
                     finding.title.toLowerCase().includes(searchText) ||
                     finding.description.toLowerCase().includes(searchText) ||
                     finding.location.toLowerCase().includes(searchText)
                 );
             }
-            
+
             populateFindingsTable(filteredFindings);
         }
 
@@ -676,7 +676,7 @@ class HtmlFormatter(BaseFormatter):
         function initializeFilters() {
             // Get unique types from findings
             const types = Array.from(new Set(findings.map(finding => finding.type)));
-            
+
             // Populate type filter dropdown
             const typeFilter = document.getElementById('type-filter');
             types.forEach(type => {
@@ -685,7 +685,7 @@ class HtmlFormatter(BaseFormatter):
                 option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
                 typeFilter.appendChild(option);
             });
-            
+
             // Add event listeners for filters
             document.getElementById('severity-filter').addEventListener('change', applyFilters);
             document.getElementById('type-filter').addEventListener('change', applyFilters);
@@ -697,7 +697,7 @@ class HtmlFormatter(BaseFormatter):
             // Populate dependencies table
             const tableBody = document.querySelector('#dependencies-table tbody');
             tableBody.innerHTML = '';
-            
+
             // Status icons/classes mapping
             const statusMap = {
                 'available': { icon: '✓', class: 'severity-low' },
@@ -705,7 +705,7 @@ class HtmlFormatter(BaseFormatter):
                 'version_mismatch': { icon: '⚠', class: 'severity-medium' },
                 'broken': { icon: '✗', class: 'severity-high' }
             };
-            
+
             // Sort dependencies by status (available first, then others)
             const dependenciesArray = Object.entries(dependencies)
                 .map(([name, info]) => ({ name, ...info }))
@@ -716,11 +716,11 @@ class HtmlFormatter(BaseFormatter):
                     // Then alphabetically by name
                     return a.name.localeCompare(b.name);
                 });
-            
+
             dependenciesArray.forEach(dep => {
                 const row = document.createElement('tr');
                 const status = statusMap[dep.status] || { icon: '?', class: '' };
-                
+
                 row.innerHTML = `
                     <td><strong>${dep.name}</strong></td>
                     <td><span class="severity-badge ${status.class}">${status.icon} ${dep.status.replace('_', ' ').toUpperCase()}</span></td>
@@ -730,24 +730,24 @@ class HtmlFormatter(BaseFormatter):
                 `;
                 tableBody.appendChild(row);
             });
-            
+
             // Populate installation instructions for missing dependencies
             const missingDepsDiv = document.getElementById('missing-dependencies');
             missingDepsDiv.innerHTML = '';
-            
+
             const missingDeps = dependenciesArray.filter(dep => dep.status !== 'available');
-            
+
             if (missingDeps.length === 0) {
                 missingDepsDiv.innerHTML = '<p>All dependencies are available. No installation required.</p>';
                 return;
             }
-            
+
             missingDeps.forEach(dep => {
                 const depDiv = document.createElement('div');
                 depDiv.className = 'card';
                 depDiv.style.marginBottom = '1rem';
                 depDiv.style.padding = '1rem';
-                
+
                 depDiv.innerHTML = `
                     <h4>${dep.name}</h4>
                     <p>${dep.description}</p>

@@ -6,10 +6,11 @@ from typing import Any, Dict
 from unittest.mock import patch
 
 import pytest
+
 from insect.analysis.static_analyzer import JavaScriptStaticAnalyzer
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_config() -> Dict[str, Any]:
     """Return a configuration for testing the analyzer."""
     return {
@@ -21,7 +22,7 @@ def test_config() -> Dict[str, Any]:
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def analyzer(test_config: Dict[str, Any]) -> JavaScriptStaticAnalyzer:
     """Initialize the analyzer with the test configuration."""
     with patch(
@@ -31,7 +32,7 @@ def analyzer(test_config: Dict[str, Any]) -> JavaScriptStaticAnalyzer:
         return JavaScriptStaticAnalyzer(test_config)
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_files_dir() -> Path:
     """Get the directory containing test files."""
     current_dir = Path(os.path.dirname(os.path.abspath(__file__)))

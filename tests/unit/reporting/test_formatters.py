@@ -1,10 +1,9 @@
 """Tests for report formatters."""
 
 import json
-import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 from unittest import mock
 
 import pytest

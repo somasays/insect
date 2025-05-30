@@ -34,7 +34,7 @@ class DependencyInfo:
         name: str,
         description: str,
         required: bool = False,
-        version_args: List[str] = ["--version"],
+        version_args: List[str] = None,
         min_version: Optional[str] = None,
         install_instructions: Optional[Dict[str, str]] = None,
     ) -> None:
@@ -48,6 +48,8 @@ class DependencyInfo:
             min_version: Minimum version required (semver format)
             install_instructions: Dict mapping platform to installation instructions
         """
+        if version_args is None:
+            version_args = ["--version"]
         self.name = name
         self.description = description
         self.required = required
@@ -70,11 +72,11 @@ class DependencyInfo:
         # Try to get platform-specific instructions
         if platform in self.install_instructions:
             return self.install_instructions[platform]
-        
+
         # Fall back to default instructions
         if "default" in self.install_instructions:
             return self.install_instructions["default"]
-        
+
         # Generic instructions if nothing else is available
         return f"Please install {self.name} to enable additional security scanning capabilities."
 
@@ -195,7 +197,7 @@ def check_dependency(
 
     dependency = DEPENDENCIES[dependency_name]
     tool_path = shutil.which(dependency_name)
-    
+
     if not tool_path:
         if dependency.required:
             logger.warning(
@@ -217,7 +219,7 @@ def check_dependency(
             check=False,
             text=True
         )
-        
+
         # Try to extract version from output
         version = None
         if result.stdout:
@@ -232,7 +234,7 @@ def check_dependency(
                         break
                 if version:
                     break
-        
+
         # Check minimum version if specified
         if dependency.min_version and version:
             if not _is_version_sufficient(version, dependency.min_version):
@@ -241,13 +243,13 @@ def check_dependency(
                     f"the recommended minimum version {dependency.min_version}."
                 )
                 return DependencyStatus.VERSION_MISMATCH, version, tool_path
-        
+
         logger.debug(
             f"Tool '{dependency_name}' v{version or 'unknown'} found at: {tool_path} "
             f"for {analyzer_name}"
         )
         return DependencyStatus.AVAILABLE, version, tool_path
-        
+
     except Exception as e:
         logger.warning(
             f"Failed to run '{dependency_name} {' '.join(dependency.version_args)}'. "
@@ -264,7 +266,7 @@ def get_dependencies_status() -> Dict[str, Dict[str, str]]:
         Dict mapping dependency names to their status information.
     """
     result = {}
-    
+
     for name, dependency in DEPENDENCIES.items():
         status, version, path = check_dependency(name, "status_check")
         result[name] = {
@@ -275,7 +277,7 @@ def get_dependencies_status() -> Dict[str, Dict[str, str]]:
             "path": path or "not found",
             "install": dependency.get_install_instructions(),
         }
-    
+
     return result
 
 
@@ -293,23 +295,23 @@ def _is_version_sufficient(current: str, minimum: str) -> bool:
         # Simple semver comparison - split by dots and compare each component
         current_parts = [int(x) for x in current.split(".")]
         minimum_parts = [int(x) for x in minimum.split(".")]
-        
+
         # Pad with zeros if needed
         while len(current_parts) < len(minimum_parts):
             current_parts.append(0)
         while len(minimum_parts) < len(current_parts):
             minimum_parts.append(0)
-            
+
         # Compare each component
         for c, m in zip(current_parts, minimum_parts):
             if c > m:
                 return True
             if c < m:
                 return False
-        
+
         # Equal versions
         return True
-    
+
     except (ValueError, IndexError, TypeError):
         # If parsing fails, assume version is sufficient
         logger.warning(f"Failed to parse version numbers: {current} vs {minimum}")
@@ -331,27 +333,27 @@ def install_dependency(dependency_name: str) -> bool:
 
     dependency = DEPENDENCIES[dependency_name]
     platform = sys.platform
-    
+
     # Get install instructions for this platform
     if platform in dependency.install_instructions:
         install_cmd = dependency.install_instructions[platform]
     else:
         install_cmd = dependency.install_instructions.get("default", "")
-    
+
     if not install_cmd:
         logger.warning(f"No installation instructions available for {dependency_name} on {platform}")
         return False
-    
+
     # If multiple installation methods are provided, use the first one (usually pip)
     if " or " in install_cmd:
         install_cmd = install_cmd.split(" or ")[0].strip()
-    
+
     # Execute the installation command
     logger.info(f"Installing {dependency_name} using: {install_cmd}")
     try:
         # Split the command into parts
         cmd_parts = install_cmd.split()
-        
+
         # Run the installation command
         result = subprocess.run(
             cmd_parts,
@@ -359,17 +361,17 @@ def install_dependency(dependency_name: str) -> bool:
             check=False,
             text=True
         )
-        
+
         if result.returncode != 0:
             logger.error(f"Failed to install {dependency_name}: {result.stderr}")
             return False
-        
+
         logger.info(f"Successfully installed {dependency_name}")
-        
+
         # Verify installation
         status, version, path = check_dependency(dependency_name, "install_verification")
         return status == DependencyStatus.AVAILABLE
-        
+
     except Exception as e:
         logger.error(f"Error installing {dependency_name}: {e}")
         return False
@@ -382,7 +384,7 @@ def install_missing_dependencies() -> Dict[str, bool]:
         Dictionary mapping dependency names to installation success (True/False)
     """
     results = {}
-    
+
     dependencies = get_dependencies_status()
     for name, info in dependencies.items():
         if info["status"] != "available":
@@ -391,7 +393,7 @@ def install_missing_dependencies() -> Dict[str, bool]:
         else:
             logger.debug(f"Dependency {name} is already available")
             results[name] = True
-    
+
     return results
 
 
@@ -408,12 +410,12 @@ def generate_dependency_report(
         If output_path is None, the report as a string. Otherwise, None.
     """
     # TODO: Implement full report generation
-    
+
     dependencies = get_dependencies_status()
-    
+
     if format_type == "text":
         result = ["# Insect External Dependencies\n"]
-        
+
         for name, info in dependencies.items():
             status_label = {
                 "available": "✓ Available",
@@ -421,7 +423,7 @@ def generate_dependency_report(
                 "version_mismatch": "⚠ Version Mismatch",
                 "broken": "✗ Broken Installation",
             }.get(info["status"], "? Unknown")
-            
+
             result.append(f"## {name.capitalize()}")
             result.append(f"Status: {status_label}")
             result.append(f"Description: {info['description']}")
@@ -431,27 +433,26 @@ def generate_dependency_report(
                 result.append("\nInstallation Instructions:")
                 result.append(f"  {info['install']}")
             result.append("\n")
-            
+
         report = "\n".join(result)
-        
+
         if output_path:
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(report)
             return None
-            
+
         return report
-        
-    elif format_type == "json":
+
+    if format_type == "json":
         import json
         report = json.dumps(dependencies, indent=2)
-        
+
         if output_path:
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(report)
             return None
-            
+
         return report
-        
-    else:
-        logger.warning(f"Unsupported report format: {format_type}")
-        return None
+
+    logger.warning(f"Unsupported report format: {format_type}")
+    return None

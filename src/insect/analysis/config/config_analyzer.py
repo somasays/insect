@@ -939,7 +939,7 @@ class ConfigAnalyzer(BaseAnalyzer):
             for i in range(len(v1_parts)):
                 if v1_parts[i] < v2_parts[i]:
                     return True
-                elif v1_parts[i] > v2_parts[i]:
+                if v1_parts[i] > v2_parts[i]:
                     return False
 
             return False  # Equal versions

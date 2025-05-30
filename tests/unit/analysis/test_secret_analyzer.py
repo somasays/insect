@@ -16,15 +16,15 @@ class TestEntropyAnalyzer:
         """Test Shannon entropy calculation."""
         # Low entropy - repeated characters
         assert EntropyAnalyzer.calculate_shannon_entropy("aaaaaaaaaa") < 1.0
-        
+
         # Medium entropy - simple pattern
         abc_entropy = EntropyAnalyzer.calculate_shannon_entropy("abcabcabc")
         assert 1.0 < abc_entropy < 2.0  # Adjusted expectation
-        
+
         # High entropy - random-like string
         high_entropy = EntropyAnalyzer.calculate_shannon_entropy("aB3$9zX@mK1pQ7fN2vL8")
         assert high_entropy > 4.0
-        
+
         # Empty string
         assert EntropyAnalyzer.calculate_shannon_entropy("") == 0.0
 
@@ -32,14 +32,14 @@ class TestEntropyAnalyzer:
         """Test high entropy string detection."""
         # Low entropy strings
         assert not EntropyAnalyzer.is_high_entropy("aaaaaaaaaaaaaaaaaaaaaa")
-        
+
         # The alphabet string actually has good entropy, so let's use a lower entropy test
         assert not EntropyAnalyzer.is_high_entropy("abcabcabcabcabcabcabcabc")
-        
+
         # High entropy strings (need to be at least 20 chars by default)
         assert EntropyAnalyzer.is_high_entropy("aB3$9zX@mK1pQ7fN2vL8aB3$9z")
         assert EntropyAnalyzer.is_high_entropy("AKIAI44QH8DHBEXAMPLE12345")
-        
+
         # Too short
         assert not EntropyAnalyzer.is_high_entropy("aB3$9z")
 
@@ -49,7 +49,7 @@ class TestEntropyAnalyzer:
         assert EntropyAnalyzer.is_base64_like("SGVsbG8gV29ybGQh")
         assert EntropyAnalyzer.is_base64_like("VGhpcyBpcyBhIHRlc3Q=")
         assert EntropyAnalyzer.is_base64_like("VGhpcyBpcyBhIGxvbmdlciB0ZXN0IHN0cmluZw==")
-        
+
         # Invalid base64
         assert not EntropyAnalyzer.is_base64_like("Hello World!")
         assert not EntropyAnalyzer.is_base64_like("not-base64-@#$")
@@ -61,7 +61,7 @@ class TestEntropyAnalyzer:
         assert EntropyAnalyzer.is_hex_like("deadbeefcafebabe")
         assert EntropyAnalyzer.is_hex_like("0123456789ABCDEF")
         assert EntropyAnalyzer.is_hex_like("abcdef1234567890")
-        
+
         # Invalid hex
         assert not EntropyAnalyzer.is_hex_like("Hello World!")
         assert not EntropyAnalyzer.is_hex_like("xyz123")
@@ -91,17 +91,17 @@ class TestSecretAnalyzer:
         AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
         AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
         '''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write(content)
             f.flush()
-            
+
             findings = analyzer.analyze_file(Path(f.name))
-            
+
             # Should find AWS access key
             aws_key_findings = [f for f in findings if "AWS Access Key" in f.title]
             assert len(aws_key_findings) >= 1
-            
+
             access_key_finding = aws_key_findings[0]
             assert access_key_finding.severity == Severity.HIGH
             assert "AKIAIOSFODNN7EXAMPLE" in access_key_finding.description
@@ -111,13 +111,13 @@ class TestSecretAnalyzer:
         content = '''
         GITHUB_TOKEN = "ghp_1234567890abcdef1234567890abcdef12345678"
         '''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False) as f:
             f.write(content)
             f.flush()
-            
+
             findings = analyzer.analyze_file(Path(f.name))
-            
+
             # Should find GitHub token
             github_findings = [f for f in findings if "GitHub" in f.title]
             assert len(github_findings) >= 1
@@ -128,13 +128,13 @@ class TestSecretAnalyzer:
         DATABASE_URL = "postgresql://user:supersecretpassword@localhost:5432/mydb"
         MONGO_URI = "mongodb://admin:password123@mongo.example.com:27017/production"
         '''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False) as f:
             f.write(content)
             f.flush()
-            
+
             findings = analyzer.analyze_file(Path(f.name))
-            
+
             # Should find database connection strings
             db_findings = [f for f in findings if "Database" in f.title]
             assert len(db_findings) >= 1
@@ -144,13 +144,13 @@ class TestSecretAnalyzer:
         content = '''
         JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
         '''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as f:
             f.write(content)
             f.flush()
-            
+
             findings = analyzer.analyze_file(Path(f.name))
-            
+
             # Should find JWT token
             jwt_findings = [f for f in findings if "JWT" in f.title]
             assert len(jwt_findings) >= 1
@@ -162,13 +162,13 @@ class TestSecretAnalyzer:
         MIIEpAIBAAKCAQEA2Z1QYaHQRvGwLNB8/a7X8c9XyC2JwK5lQJ7vJKlmnNmW
         -----END RSA PRIVATE KEY-----
         '''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.pem', delete=False) as f:
             f.write(content)
             f.flush()
-            
+
             findings = analyzer.analyze_file(Path(f.name))
-            
+
             # Should find SSH private key
             ssh_findings = [f for f in findings if "SSH" in f.title]
             assert len(ssh_findings) >= 1
@@ -179,21 +179,21 @@ class TestSecretAnalyzer:
         content = '''
         # This should be detected as high entropy
         SECRET_KEY = "aB3$9zX@mK1pQ7fN2vL8aB3$9zX@mK1pQ7fN2vL8"
-        
+
         # This should not be detected (low entropy)
         NOT_SECRET = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         '''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write(content)
             f.flush()
-            
+
             findings = analyzer.analyze_file(Path(f.name))
-            
+
             # Should find high entropy string but not low entropy
             high_entropy_findings = [f for f in findings if "High-entropy" in f.title]
             assert len(high_entropy_findings) >= 1
-            
+
             # Check that it has high entropy metadata
             entropy_finding = high_entropy_findings[0]
             assert entropy_finding.metadata["entropy"] > 4.5
@@ -208,13 +208,13 @@ class TestSecretAnalyzer:
         REPEATED = "aaaaaaaaaaaaaaaaaaa"
         ONLY_LETTERS = "abcdefghijklmnopqrstuvwxyz"
         '''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write(content)
             f.flush()
-            
+
             findings = analyzer.analyze_file(Path(f.name))
-            
+
             # Should have very few or no findings due to false positive filtering
             secret_findings = [f for f in findings if "test" not in f.description.lower()]
             assert len(secret_findings) <= 1  # Allow for some edge cases
@@ -224,17 +224,17 @@ class TestSecretAnalyzer:
         content = '''
         # This should be detected with AWS context
         aws_secret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-        
+
         # This might not be detected without context
         random_string = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
         '''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write(content)
             f.flush()
-            
+
             findings = analyzer.analyze_file(Path(f.name))
-            
+
             # Should find at least one secret
             assert len(findings) >= 1
 
@@ -247,24 +247,24 @@ class TestSecretAnalyzer:
             ('.py', 'API_KEY = "sk_test_1234567890abcdef1234567890abcdef"'),
             ('.js', 'const apiKey = "sk_test_1234567890abcdef1234567890abcdef";'),
         ]
-        
+
         total_findings = 0
-        
+
         for suffix, content in test_cases:
             with tempfile.NamedTemporaryFile(mode='w', suffix=suffix, delete=False) as f:
                 f.write(content)
                 f.flush()
-                
+
                 findings = analyzer.analyze_file(Path(f.name))
                 total_findings += len(findings)
-        
+
         # Should find secrets in multiple formats
         assert total_findings >= len(test_cases) - 1  # Allow for some variation
 
     def test_excluded_paths(self, analyzer):
         """Test that excluded paths are skipped."""
         content = 'SECRET_KEY = "sk_test_1234567890abcdef1234567890abcdef"'
-        
+
         # Test excluded directories
         excluded_paths = [
             'node_modules/package/file.js',
@@ -272,12 +272,12 @@ class TestSecretAnalyzer:
             '__pycache__/module.py',
             'venv/lib/python3.9/site-packages/package.py'
         ]
-        
+
         for path_str in excluded_paths:
             with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
                 f.write(content)
                 f.flush()
-                
+
                 # Simulate excluded path
                 test_path = Path(path_str)
                 if any(exclude in str(test_path) for exclude in analyzer.exclude_paths):
@@ -293,14 +293,14 @@ class TestSecretAnalyzer:
         GITHUB_TOKEN = "ghp_1234567890abcdef1234567890abcdef12345678"
         HIGH_ENTROPY = "aB3$9zX@mK1pQ7fN2vL8aB3$9zX@mK1pQ7fN2vL8"
         '''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.env', delete=False) as f:
             f.write(content)
             f.flush()
-            
+
             findings = analyzer.analyze_file(Path(f.name))
             report = analyzer.generate_secret_report(findings)
-            
+
             # Check report structure
             assert "summary" in report
             assert "secrets" in report
@@ -308,7 +308,7 @@ class TestSecretAnalyzer:
             assert "by_severity" in report["summary"]
             assert "by_type" in report["summary"]
             assert "files_affected" in report["summary"]
-            
+
             # Should have findings
             assert report["summary"]["total_secrets"] > 0
             assert report["summary"]["files_affected"] == 1
@@ -318,13 +318,13 @@ class TestSecretAnalyzer:
         content = '''
         BITCOIN_KEY = "5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS"
         '''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write(content)
             f.flush()
-            
+
             findings = analyzer.analyze_file(Path(f.name))
-            
+
             # Should find Bitcoin private key
             bitcoin_findings = [f for f in findings if "Bitcoin" in f.title]
             assert len(bitcoin_findings) >= 1
@@ -335,13 +335,13 @@ class TestSecretAnalyzer:
         content = '''
         ETH_PRIVATE_KEY = "0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318"
         '''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as f:
             f.write(content)
             f.flush()
-            
+
             findings = analyzer.analyze_file(Path(f.name))
-            
+
             # Should find Ethereum private key
             eth_findings = [f for f in findings if "Ethereum" in f.title]
             assert len(eth_findings) >= 1
@@ -357,7 +357,7 @@ class TestSecretAnalyzer:
             }
         }
         analyzer_no_entropy = SecretAnalyzer(config_no_entropy)
-        
+
         # Test with disabled pattern matching
         config_no_patterns = {
             "secret": {
@@ -366,19 +366,19 @@ class TestSecretAnalyzer:
             }
         }
         analyzer_no_patterns = SecretAnalyzer(config_no_patterns)
-        
+
         content = '''
         AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
         HIGH_ENTROPY = "aB3$9zX@mK1pQ7fN2vL8aB3$9zX@mK1pQ7fN2vL8"
         '''
-        
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write(content)
             f.flush()
-            
+
             findings_no_entropy = analyzer_no_entropy.analyze_file(Path(f.name))
             findings_no_patterns = analyzer_no_patterns.analyze_file(Path(f.name))
-            
+
             # Both should find something, but different types
             assert len(findings_no_entropy) > 0
             assert len(findings_no_patterns) >= 0  # May or may not find high entropy strings
@@ -392,7 +392,7 @@ class TestSecretAnalyzer:
         assert analyzer.can_analyze_file(Path("docker-compose.yml"))
         assert analyzer.can_analyze_file(Path("main.go"))
         assert analyzer.can_analyze_file(Path("app.rs"))
-        
+
         # Should not analyze unknown files (based on configuration)
         # Note: The current implementation supports many extensions,
         # so most files will be analyzed

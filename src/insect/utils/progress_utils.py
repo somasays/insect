@@ -135,7 +135,7 @@ class ProgressBar:
             self._current_suffix = self._custom_suffix_fn(
                 self._iteration, self.total, elapsed_time
             )
-        
+
         # Format the progress bar
         progress_str = f"\r{self.prefix} |{bar}| {percent:.{self.decimals}f}% {self._current_suffix}"
         print(f"\r{' ' * (len(progress_str)-1)}", end="\r", file=self.file)
@@ -154,16 +154,15 @@ def format_time(seconds: float) -> str:
     """
     if seconds < 0:
         return "0s"
-    
+
     hours, remainder = divmod(int(seconds), 3600)
     minutes, seconds = divmod(remainder, 60)
-    
+
     if hours > 0:
         return f"{hours}h {minutes}m {seconds}s"
-    elif minutes > 0:
+    if minutes > 0:
         return f"{minutes}m {seconds}s"
-    else:
-        return f"{seconds}s"
+    return f"{seconds}s"
 
 
 def format_eta(current: int, total: int, elapsed: float) -> str:
@@ -179,14 +178,14 @@ def format_eta(current: int, total: int, elapsed: float) -> str:
     """
     if current <= 0:
         return "ETA: calculating..."
-    
+
     items_per_second = current / elapsed
     if items_per_second <= 0:
         return "ETA: calculating..."
-    
+
     remaining_items = total - current
     eta_seconds = remaining_items / items_per_second
-    
+
     return f"ETA: {format_time(eta_seconds)}"
 
 
@@ -202,28 +201,28 @@ def get_scan_progress_formatter(
     Returns:
         Function that formats progress information.
     """
-    
+
     def formatter(current: int, total: int, elapsed: float) -> str:
         parts = []
-        
+
         # Add count
         parts.append(f"{current}/{total}")
-        
+
         # Add speed if requested
         if show_speed and elapsed > 0:
             speed = current / elapsed
             parts.append(f"{speed:.1f} files/s")
-        
+
         # Add ETA
         parts.append(format_eta(current, total, elapsed))
-        
+
         # Add elapsed time
         parts.append(f"Elapsed: {format_time(elapsed)}")
-        
+
         suffix = " | ".join(parts)
         if prefix:
             suffix = f"{prefix} {suffix}"
-            
+
         return suffix
-    
+
     return formatter

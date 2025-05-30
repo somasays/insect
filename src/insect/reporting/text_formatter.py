@@ -27,7 +27,7 @@ class TextFormatter(BaseFormatter):
         console = Console(record=True, width=100)
 
         # Report header
-        console.print(f"\n[bold]Insect Security Report[/bold]")
+        console.print("\n[bold]Insect Security Report[/bold]")
         console.print(f"Repository: {metadata['repository']}")
         console.print(f"Scan ID: {metadata['scan_id']}")
         console.print(f"Timestamp: {metadata['timestamp']}")
@@ -122,7 +122,7 @@ class TextFormatter(BaseFormatter):
                         console.print(f"   Remediation: {finding.remediation}")
 
                     if finding.references:
-                        console.print(f"   References:")
+                        console.print("   References:")
                         for ref in finding.references:
                             console.print(f"     - {ref}")
 

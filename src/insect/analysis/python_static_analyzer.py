@@ -136,7 +136,7 @@ class PythonStaticAnalyzer(BaseAnalyzer):
             List of findings detected by bandit
         """
         findings = []
-        
+
         # If bandit is not available, return a finding with installation instructions
         if not self.use_bandit:
             if self.bandit_install_instructions:
@@ -159,7 +159,7 @@ class PythonStaticAnalyzer(BaseAnalyzer):
                     )
                 )
             return findings
-        
+
         try:
             # Use shutil.which to find full path to tool for security
             bandit_path = shutil.which("bandit")
@@ -249,7 +249,7 @@ class PythonStaticAnalyzer(BaseAnalyzer):
             List of findings detected by semgrep
         """
         findings = []
-        
+
         # If semgrep is not available, return a finding with installation instructions
         if not self.use_semgrep:
             if self.semgrep_install_instructions:
@@ -272,7 +272,7 @@ class PythonStaticAnalyzer(BaseAnalyzer):
                     )
                 )
             return findings
-            
+
         try:
             # Use shutil.which to find full path to tool for security
             semgrep_path = shutil.which("semgrep")

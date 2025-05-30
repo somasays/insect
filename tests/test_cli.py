@@ -19,7 +19,7 @@ def test_main_exit_code() -> None:
          patch("insect.core.scan_repository") as mock_scan_repository:
         # Set up mock return values
         mock_scan_repository.return_value = ([], {"duration_seconds": 1.0, "repository": "/path/to/repo", "file_count": 0, "finding_count": 0, "severity_counts": {"critical": 0, "high": 0, "medium": 0, "low": 0}})
-        
+
         mock_parse_args.return_value = type(
             "obj",
             (object,),

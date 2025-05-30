@@ -124,4 +124,4 @@ class Finding:
             remediation=data.get("remediation"),
             cwe_id=data.get("cwe_id"),
             cvss_score=data.get("cvss_score"),
-        ) 
+        )

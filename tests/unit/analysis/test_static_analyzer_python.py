@@ -5,10 +5,11 @@ from pathlib import Path
 from typing import Any, Dict
 
 import pytest
+
 from insect.analysis.static_analyzer import PythonStaticAnalyzer
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_config() -> Dict[str, Any]:
     """Return a configuration for testing the analyzer."""
     return {
@@ -21,13 +22,13 @@ def test_config() -> Dict[str, Any]:
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def analyzer(test_config: Dict[str, Any]) -> PythonStaticAnalyzer:
     """Initialize the analyzer with the test configuration."""
     return PythonStaticAnalyzer(test_config)
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_files_dir() -> Path:
     """Get the directory containing test files."""
     current_dir = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -74,21 +75,21 @@ def test_eval_exec_detection(
         # Malicious code using eval
         data = "print('hello')"
         eval(data)
-        
+
         # Obfuscated exec
         import base64
         exec(base64.b64decode("cHJpbnQoImhhY2tlZCIp").decode('utf-8'))
         """,
     )
-    
+
     findings = analyzer.analyze_file(file_path)
-    
+
     assert len(findings) >= 2
     assert any(
-        "code execution" in finding.title.lower() 
+        "code execution" in finding.title.lower()
         for finding in findings
     )
-    
+
     # Clean up
     os.remove(file_path)
 
@@ -279,22 +280,22 @@ def test_obfuscated_code_detection(
         # Obfuscated exec with encoded payload
         import binascii
         exec(binascii.unhexlify('7072696e742822686163646564222903').decode('utf-8'))
-        
+
         # Another obfuscation technique
         import base64
         import builtins
         getattr(builtins, 'exec')(base64.b64decode('cHJpbnQoImhhY2tlZCIp').decode('utf-8'))
         """,
     )
-    
+
     findings = analyzer.analyze_file(file_path)
-    
+
     assert len(findings) >= 1
     assert any(
         ("malicious" in finding.title.lower() or "obfuscated" in finding.title.lower())
         for finding in findings
     )
-    
+
     # Clean up
     os.remove(file_path)
 
@@ -393,7 +394,7 @@ def test_confidence_threshold(test_config: Dict[str, Any], test_files_dir: Path)
     # Set a high confidence threshold
     test_config["python_static_analyzer"]["min_confidence"] = 0.8
     high_threshold_analyzer = PythonStaticAnalyzer(test_config)
-    
+
     # Create a file with different types of issues
     file_path = create_test_file(
         test_files_dir,
@@ -401,26 +402,26 @@ def test_confidence_threshold(test_config: Dict[str, Any], test_files_dir: Path)
         """
         # This has high confidence issues (eval)
         eval("print('hello')")
-        
+
         # This has medium confidence (suspicious import)
         import socket
-        
+
         # This has lower confidence (potential encoded string)
         s = "aGVsbG8gd29ybGQ="
         """,
     )
-    
+
     # Get all findings with no threshold
     test_config["python_static_analyzer"]["min_confidence"] = 0.0
     all_analyzer = PythonStaticAnalyzer(test_config)
-    all_findings = all_analyzer.analyze_file(file_path)
-    
+    all_analyzer.analyze_file(file_path)
+
     # Get findings with high threshold
-    high_findings = high_threshold_analyzer.analyze_file(file_path)
-    
+    high_threshold_analyzer.analyze_file(file_path)
+
     # The high threshold analyzer should be working correctly
     assert high_threshold_analyzer.min_confidence == 0.8
     assert all_analyzer.min_confidence == 0.0
-    
+
     # Clean up
     os.remove(file_path)

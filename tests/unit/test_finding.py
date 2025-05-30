@@ -29,15 +29,15 @@ def test_location_str():
     # Location with only path
     loc1 = Location(path=Path("/path/to/file.py"))
     assert str(loc1) == "/path/to/file.py"
-    
+
     # Location with path and line
     loc2 = Location(path=Path("/path/to/file.py"), line_start=10)
     assert str(loc2) == "/path/to/file.py:10"
-    
+
     # Location with path, start and end line
     loc3 = Location(path=Path("/path/to/file.py"), line_start=10, line_end=15)
     assert str(loc3) == "/path/to/file.py:10-15"
-    
+
     # Location with same start and end line
     loc4 = Location(path=Path("/path/to/file.py"), line_start=10, line_end=10)
     assert str(loc4) == "/path/to/file.py:10"
@@ -46,7 +46,7 @@ def test_location_str():
 def test_finding_creation():
     """Test creating a Finding instance."""
     location = Location(path=Path("/path/to/file.py"), line_start=10, line_end=15)
-    
+
     finding = Finding(
         id="INSECT-001",
         title="Test Finding",
@@ -56,7 +56,7 @@ def test_finding_creation():
         location=location,
         analyzer="test_analyzer",
     )
-    
+
     assert finding.id == "INSECT-001"
     assert finding.title == "Test Finding"
     assert finding.description == "This is a test finding"
@@ -84,7 +84,7 @@ def test_finding_to_dict():
         column_end=20,
         snippet="def vulnerable_func():",
     )
-    
+
     finding = Finding(
         id="INSECT-001",
         title="Test Finding",
@@ -101,13 +101,13 @@ def test_finding_to_dict():
         cwe_id="CWE-123",
         cvss_score=7.5,
     )
-    
+
     # Temporarily set a fixed created_at for testing
     fixed_datetime = datetime(2023, 1, 1, 12, 0, 0)
     finding.created_at = fixed_datetime
-    
+
     result = finding.to_dict()
-    
+
     assert result["id"] == "INSECT-001"
     assert result["title"] == "Test Finding"
     assert result["description"] == "This is a test finding"
@@ -156,9 +156,9 @@ def test_finding_from_dict():
         "cwe_id": "CWE-798",
         "cvss_score": 8.2,
     }
-    
+
     finding = Finding.from_dict(data)
-    
+
     assert finding.id == "INSECT-001"
     assert finding.title == "Test Finding"
     assert finding.description == "This is a test finding"
@@ -178,4 +178,4 @@ def test_finding_from_dict():
     assert finding.metadata == {"source": "config"}
     assert finding.remediation == "Use environment variables"
     assert finding.cwe_id == "CWE-798"
-    assert finding.cvss_score == 8.2 
+    assert finding.cvss_score == 8.2

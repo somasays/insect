@@ -5,14 +5,12 @@ This module provides a caching mechanism for faster re-scanning by storing
 file hashes and analysis results.
 """
 
-import hashlib
 import json
 import logging
 import os
-import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional
 
 from insect.finding import Finding
 from insect.utils.hash_utils import calculate_file_hash
@@ -32,19 +30,19 @@ class ScanCache:
                        in the repository root.
         """
         self.repo_path = repo_path
-        
+
         # Default cache location is .insect/cache in the repo
         if cache_dir is None:
             self.cache_dir = repo_path / ".insect" / "cache"
         else:
             self.cache_dir = cache_dir
-        
+
         # Create cache directory if it doesn't exist
         os.makedirs(self.cache_dir, exist_ok=True)
-        
+
         # Path to the cache file
         self.cache_file = self.cache_dir / "scan_cache.json"
-        
+
         # Cache data format:
         # {
         #     "version": 1,
@@ -63,7 +61,7 @@ class ScanCache:
         #     }
         # }
         self.cache_data = self._load_cache()
-        
+
         # Keep track of how many cache hits/misses we get
         self.stats = {
             "hits": 0,
@@ -74,7 +72,7 @@ class ScanCache:
 
     def _load_cache(self) -> Dict[str, Any]:
         """Load cache data from disk.
-        
+
         Returns:
             The loaded cache data, or a new cache if none exists.
         """
@@ -85,23 +83,23 @@ class ScanCache:
                 "last_scan": datetime.now().isoformat(),
                 "file_hashes": {},
             }
-        
+
         try:
-            with open(self.cache_file, "r", encoding="utf-8") as f:
+            with open(self.cache_file, encoding="utf-8") as f:
                 cache_data = json.load(f)
-                
+
             # Check cache version
             if cache_data.get("version", 0) != 1:
-                logger.warning(f"Cache version mismatch, creating new cache")
+                logger.warning("Cache version mismatch, creating new cache")
                 return {
                     "version": 1,
                     "last_scan": datetime.now().isoformat(),
                     "file_hashes": {},
                 }
-                
+
             logger.info(f"Loaded scan cache with {len(cache_data.get('file_hashes', {}))} entries")
             return cache_data
-            
+
         except (json.JSONDecodeError, ValueError, KeyError) as e:
             logger.warning(f"Error loading cache file: {e}, creating new cache")
             return {
@@ -121,7 +119,7 @@ class ScanCache:
 
     def get_cache_stats(self) -> Dict[str, int]:
         """Get cache statistics.
-        
+
         Returns:
             Dict with cache statistics (hits, misses, files scanned, files skipped).
         """
@@ -129,50 +127,50 @@ class ScanCache:
 
     def is_file_cached(self, file_path: Path, analyzer_name: str) -> bool:
         """Check if a file has a valid cache entry for a specific analyzer.
-        
+
         Args:
             file_path: Path to the file.
             analyzer_name: Name of the analyzer.
-            
+
         Returns:
             True if the file is cached for this analyzer, False otherwise.
         """
         str_path = str(file_path)
-        
+
         # Check if the file is in the cache
         if str_path not in self.cache_data["file_hashes"]:
             self.stats["misses"] += 1
             return False
-        
+
         file_info = self.cache_data["file_hashes"][str_path]
-        
+
         # Check if the analyzer results are cached
         if analyzer_name not in file_info.get("analyzers", {}):
             self.stats["misses"] += 1
             return False
-        
+
         # Check if the file has been modified since the last scan
         try:
             current_mtime = file_path.stat().st_mtime
             cached_mtime = file_info.get("mtime", 0)
-            
+
             # If the modification time has changed, recalculate hash
             if current_mtime != cached_mtime:
                 current_hash = calculate_file_hash(file_path)
                 cached_hash = file_info.get("hash", "")
-                
+
                 # If the hash has changed, the file has been modified
                 if current_hash != cached_hash:
                     self.stats["misses"] += 1
                     return False
-                
+
                 # Update the mtime if the hash hasn't changed
                 file_info["mtime"] = current_mtime
         except (FileNotFoundError, OSError):
             # If we can't stat the file, assume it's not cached
             self.stats["misses"] += 1
             return False
-        
+
         # File is cached and up-to-date
         self.stats["hits"] += 1
         return True
@@ -181,24 +179,24 @@ class ScanCache:
         self, file_path: Path, analyzer_name: str
     ) -> List[Finding]:
         """Get cached findings for a file from a specific analyzer.
-        
+
         Args:
             file_path: Path to the file.
             analyzer_name: Name of the analyzer.
-            
+
         Returns:
             List of findings from the cache, or an empty list if not cached.
         """
         str_path = str(file_path)
-        
+
         if not self.is_file_cached(file_path, analyzer_name):
             return []
-        
+
         try:
             # Get the cached findings
             cache_entry = self.cache_data["file_hashes"][str_path]["analyzers"][analyzer_name]
             findings_dicts = cache_entry.get("findings", [])
-            
+
             # Convert the dictionaries back to Finding objects
             findings = []
             for finding_dict in findings_dicts:
@@ -207,9 +205,9 @@ class ScanCache:
                     findings.append(finding)
                 except Exception as e:
                     logger.warning(f"Error deserializing cached finding: {e}")
-            
+
             return findings
-            
+
         except (KeyError, TypeError) as e:
             logger.warning(f"Error retrieving cached findings: {e}")
             return []
@@ -218,19 +216,19 @@ class ScanCache:
         self, file_path: Path, analyzer_name: str, findings: List[Finding]
     ) -> None:
         """Cache findings for a file from a specific analyzer.
-        
+
         Args:
             file_path: Path to the file.
             analyzer_name: Name of the analyzer.
             findings: List of findings to cache.
         """
         str_path = str(file_path)
-        
+
         try:
             # Calculate the file's hash
             file_hash = calculate_file_hash(file_path)
             file_mtime = file_path.stat().st_mtime
-            
+
             # Create the cache entry if it doesn't exist
             if str_path not in self.cache_data["file_hashes"]:
                 self.cache_data["file_hashes"][str_path] = {
@@ -242,39 +240,39 @@ class ScanCache:
                 # Update hash and mtime
                 self.cache_data["file_hashes"][str_path]["hash"] = file_hash
                 self.cache_data["file_hashes"][str_path]["mtime"] = file_mtime
-            
+
             # Convert findings to dictionaries
             findings_dicts = [finding.to_dict() for finding in findings]
-            
+
             # Cache the findings for this analyzer
             self.cache_data["file_hashes"][str_path]["analyzers"][analyzer_name] = {
                 "findings": findings_dicts,
                 "timestamp": datetime.now().isoformat()
             }
-            
+
             # Update the last scan timestamp
             self.cache_data["last_scan"] = datetime.now().isoformat()
-            
+
         except (FileNotFoundError, OSError, TypeError, ValueError) as e:
             logger.warning(f"Error caching findings for {file_path}: {e}")
 
     def clean_old_entries(self, max_age_days: int = 30) -> int:
         """Clean old entries from the cache.
-        
+
         Args:
             max_age_days: Maximum age of cache entries in days.
-            
+
         Returns:
             Number of entries removed.
         """
         now = datetime.now()
         max_age_seconds = max_age_days * 24 * 60 * 60
         entries_removed = 0
-        
+
         # Loop through all files in the cache
         for file_path in list(self.cache_data["file_hashes"].keys()):
             file_info = self.cache_data["file_hashes"][file_path]
-            
+
             # Check if the file exists
             path_obj = Path(file_path)
             if not path_obj.exists():
@@ -282,18 +280,18 @@ class ScanCache:
                 del self.cache_data["file_hashes"][file_path]
                 entries_removed += 1
                 continue
-            
+
             # Check the age of each analyzer's findings
             if "analyzers" in file_info:
                 for analyzer_name in list(file_info["analyzers"].keys()):
                     analyzer_info = file_info["analyzers"][analyzer_name]
                     timestamp_str = analyzer_info.get("timestamp")
-                    
+
                     if timestamp_str:
                         try:
                             timestamp = datetime.fromisoformat(timestamp_str)
                             age_seconds = (now - timestamp).total_seconds()
-                            
+
                             if age_seconds > max_age_seconds:
                                 # Remove old analyzer entry
                                 del file_info["analyzers"][analyzer_name]
@@ -302,21 +300,21 @@ class ScanCache:
                             # Remove invalid timestamp entries
                             del file_info["analyzers"][analyzer_name]
                             entries_removed += 1
-                
+
                 # Remove the file entry if it has no analyzers left
                 if not file_info["analyzers"]:
                     del self.cache_data["file_hashes"][file_path]
                     entries_removed += 1
-        
+
         return entries_removed
 
 
 def cache_enabled(config: Dict[str, Any]) -> bool:
     """Check if caching is enabled in the configuration.
-    
+
     Args:
         config: Configuration dictionary.
-        
+
     Returns:
         True if caching is enabled, False otherwise.
     """
@@ -325,18 +323,18 @@ def cache_enabled(config: Dict[str, Any]) -> bool:
 
 def get_cache_dir(config: Dict[str, Any], repo_path: Path) -> Path:
     """Get the cache directory from the configuration.
-    
+
     Args:
         config: Configuration dictionary.
         repo_path: Path to the repository.
-        
+
     Returns:
         Path to the cache directory.
     """
     cache_dir = config.get("cache", {}).get("directory")
-    
+
     if cache_dir:
         return Path(cache_dir)
-    
+
     # Default to .insect/cache in the repo
     return repo_path / ".insect" / "cache"

@@ -3,8 +3,6 @@ Utility functions for static analyzers.
 """
 
 import logging
-import shutil
-import subprocess
 from typing import List, Optional, Tuple
 
 from insect.analysis.dependency_manager import DependencyStatus, check_dependency
@@ -39,7 +37,7 @@ def check_tool_availability(
     tool_name: str,
     analyzer_name: str,
     required: bool = True,
-    version_args: List[str] = ["--version"],
+    version_args: List[str] = None,
 ) -> Tuple[bool, Optional[str]]:
     """Check if a required external tool is available in the PATH.
 
@@ -55,18 +53,20 @@ def check_tool_availability(
         - str or None: Installation instructions if tool is not available, None otherwise.
     """
     # Use the new dependency manager for checking tools
+    if version_args is None:
+        version_args = ["--version"]
     status, version, tool_path = check_dependency(tool_name, analyzer_name)
-    
+
     if status == DependencyStatus.AVAILABLE:
         return True, None
-    
+
     # For backward compatibility, return the same simple boolean result plus installation instructions
     if status == DependencyStatus.NOT_FOUND:
         from insect.analysis.dependency_manager import DEPENDENCIES
         if tool_name in DEPENDENCIES:
             install_instructions = DEPENDENCIES[tool_name].get_install_instructions()
             return False, install_instructions
-    
+
     if status == DependencyStatus.VERSION_MISMATCH:
         logger.warning(
             f"{tool_name.capitalize()} was found but may not function correctly. "
@@ -74,5 +74,5 @@ def check_tool_availability(
         )
         # Still return True for version mismatch, as the tool may still work
         return True, None
-    
+
     return False, None
