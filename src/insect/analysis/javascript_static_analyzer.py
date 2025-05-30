@@ -43,7 +43,7 @@ class JavaScriptStaticAnalyzer(BaseAnalyzer):
         self.rules = [
             rule for rule in JAVASCRIPT_RULES if rule.language == "javascript"
         ]
-        self.rules.extend(ADDITIONAL_JAVASCRIPT_RULES)
+        self.rules.extend(ADDITIONAL_JAVASCRIPT_RULES)  # type: ignore[arg-type]
         self.analyzer_config = config.get(self.name, {})
         self.min_confidence = self.analyzer_config.get("min_confidence", 0.0)
 

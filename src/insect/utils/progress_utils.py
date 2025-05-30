@@ -22,10 +22,10 @@ class ProgressBar:
         length: int = 50,
         fill: str = "█",
         print_end: str = "\r",
-        file=sys.stdout,
+        file=sys.stdout,  # type: ignore[assignment]
         update_interval: float = 0.1,
         dynamic: bool = True,
-    ):
+    ) -> None:
         """Initialize the progress bar.
 
         Args:
@@ -53,12 +53,12 @@ class ProgressBar:
 
         # Internal state
         self._iteration = 0
-        self._start_time = None
+        self._start_time: Optional[float] = None
         self._lock = threading.RLock()
-        self._update_thread = None
+        self._update_thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
         self._current_suffix = suffix
-        self._custom_suffix_fn = None
+        self._custom_suffix_fn: Optional[Callable[[int, int, float], str]] = None
         self._is_finished = False
 
     def set_suffix_function(self, fn: Callable[[int, int, float], str]) -> None:

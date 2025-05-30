@@ -34,7 +34,7 @@ class DependencyInfo:
         name: str,
         description: str,
         required: bool = False,
-        version_args: List[str] = None,
+        version_args: Optional[List[str]] = None,
         min_version: Optional[str] = None,
         install_instructions: Optional[Dict[str, str]] = None,
     ) -> None:

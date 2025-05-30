@@ -224,7 +224,10 @@ class ContainerAnalyzer(BaseAnalyzer):
         findings = []
 
         for line_num, line in enumerate(lines, 1):
-            matches = rule.pattern.finditer(line)
+            if rule.pattern:
+                matches = rule.pattern.finditer(line)
+            else:
+                continue
             for match in matches:
                 finding = self._create_finding(
                     rule_id=rule.rule_id,
@@ -767,8 +770,8 @@ class ContainerAnalyzer(BaseAnalyzer):
         return bool(self._is_kubernetes_config(file_path))
 
     def _create_finding(self, rule_id: str, title: str, description: str, severity: Severity,
-                       file_path: Path, line_number: int = None, column_number: int = None,
-                       finding_type: str = "MISCONFIG", remediation: str = None) -> Finding:
+                       file_path: Path, line_number: Optional[int] = None, column_number: Optional[int] = None,
+                       finding_type: str = "MISCONFIG", remediation: Optional[str] = None) -> Finding:
         """Create a finding with the correct format."""
         import uuid
 

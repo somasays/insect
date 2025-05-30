@@ -1800,7 +1800,7 @@ class ConfigAnalyzer(BaseAnalyzer):
         Returns:
             List of findings detected in the Cargo.toml file
         """
-        findings = []
+        findings: List[Finding] = []
 
         # Check for dependencies with potential security issues
         # For now, this is covered by the regex rules

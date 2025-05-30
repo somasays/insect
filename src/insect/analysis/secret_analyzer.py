@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Pattern
 
-from ..finding import Finding, Severity
+from ..finding import Finding, FindingType, Location, Severity
 from . import BaseAnalyzer, register_analyzer
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class EntropyAnalyzer:
             return 0.0
 
         # Count frequency of each character
-        frequency = {}
+        frequency: Dict[str, int] = {}
         for char in data:
             frequency[char] = frequency.get(char, 0) + 1
 
@@ -363,7 +363,7 @@ class SecretAnalyzer(BaseAnalyzer):
 
     def analyze_file(self, file_path: Path) -> List[Finding]:
         """Analyze a file for secrets using both pattern matching and entropy analysis."""
-        findings = []
+        findings: List[Finding] = []
 
         try:
             # Skip certain paths
@@ -450,14 +450,13 @@ class SecretAnalyzer(BaseAnalyzer):
                 column_number = match.start() - content.rfind('\n', 0, match.start())
 
                 finding = Finding(
-                    analyzer_name=self.name,
-                    rule_id=f"SECRET-{pattern.name.upper().replace(' ', '_')}",
+                    id=f"SECRET-{pattern.name.upper().replace(' ', '_')}",
+                    analyzer=self.name,
                     severity=pattern.severity,
                     title=f"Secret detected: {pattern.name}",
                     description=f"{pattern.description}\n\nDetected value: {secret_value[:20]}{'...' if len(secret_value) > 20 else ''}",
-                    file_path=str(file_path),
-                    line_number=line_number,
-                    column_number=column_number,
+                    location=Location(path=file_path, line_start=line_number, column_start=column_number),
+                    type=FindingType.SECRET,
                     metadata={
                         "secret_type": pattern.name,
                         "entropy": self.entropy_analyzer.calculate_shannon_entropy(secret_value),
@@ -474,7 +473,7 @@ class SecretAnalyzer(BaseAnalyzer):
 
     def _detect_secrets_by_entropy(self, file_path: Path, content: str) -> List[Finding]:
         """Detect secrets using entropy analysis."""
-        findings = []
+        findings: List[Finding] = []
 
         # Look for high-entropy strings in common patterns
         entropy_patterns = [
@@ -520,14 +519,13 @@ class SecretAnalyzer(BaseAnalyzer):
                 severity = self._calculate_entropy_severity(candidate, entropy)
 
                 finding = Finding(
-                    analyzer_name=self.name,
-                    rule_id="SECRET-HIGH_ENTROPY",
+                    id="SECRET-HIGH_ENTROPY",
+                    analyzer=self.name,
                     severity=severity,
                     title="High-entropy string detected",
                     description=f"High-entropy string detected that may be a secret.\n\nEntropy: {entropy:.2f}\nDetected value: {candidate[:20]}{'...' if len(candidate) > 20 else ''}",
-                    file_path=str(file_path),
-                    line_number=line_number,
-                    column_number=column_number,
+                    location=Location(path=file_path, line_start=line_number, column_start=column_number),
+                    type=FindingType.SECRET,
                     metadata={
                         "secret_type": "High Entropy",
                         "entropy": entropy,
@@ -564,7 +562,7 @@ class SecretAnalyzer(BaseAnalyzer):
             return Severity.MEDIUM
         if entropy >= 4.5:
             return Severity.LOW
-        return Severity.INFO
+        return Severity.LOW  # INFO doesn't exist, use LOW instead
 
     def _filter_findings(self, findings: List[Finding]) -> List[Finding]:
         """Filter findings to remove duplicates and improve accuracy."""
@@ -577,7 +575,7 @@ class SecretAnalyzer(BaseAnalyzer):
             if secret_start >= 0:
                 secret_value = finding.description[secret_start + 16:].split("...")[0].strip()
             else:
-                secret_value = f"{finding.file_path}:{finding.line_number}"
+                secret_value = f"{finding.location.path}:{finding.location.line_start}"
 
             # Skip duplicates
             if secret_value in seen_secrets:
@@ -590,12 +588,12 @@ class SecretAnalyzer(BaseAnalyzer):
 
     def generate_secret_report(self, findings: List[Finding]) -> Dict[str, Any]:
         """Generate a detailed report of detected secrets."""
-        report = {
+        report: Dict[str, Any] = {
             "summary": {
                 "total_secrets": len(findings),
                 "by_severity": {},
                 "by_type": {},
-                "files_affected": len({f.file_path for f in findings})
+                "files_affected": len({f.location.path for f in findings})
             },
             "secrets": []
         }
@@ -616,8 +614,8 @@ class SecretAnalyzer(BaseAnalyzer):
             report["secrets"].append({
                 "type": finding.metadata.get("secret_type", "Unknown"),
                 "severity": finding.severity.value,
-                "file": finding.file_path,
-                "line": finding.line_number,
+                "file": finding.location.path,
+                "line": finding.location.line_start,
                 "entropy": finding.metadata.get("entropy", 0),
                 "is_base64": finding.metadata.get("is_base64", False),
                 "is_hex": finding.metadata.get("is_hex", False),

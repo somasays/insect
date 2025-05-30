@@ -339,13 +339,13 @@ def create_scan_metadata(
         severity_counts[finding.severity.name] += 1
 
     # Calculate finding type counts
-    type_counts = {}
+    type_counts: Dict[str, int] = {}
     for finding in findings:
         type_name = finding.type.name
         type_counts[type_name] = type_counts.get(type_name, 0) + 1
 
     # Calculate findings per analyzer
-    analyzer_counts = {}
+    analyzer_counts: Dict[str, int] = {}
     for finding in findings:
         analyzer_counts[finding.analyzer] = analyzer_counts.get(finding.analyzer, 0) + 1
 
@@ -356,7 +356,7 @@ def create_scan_metadata(
             all_tags.update(finding.tags)
 
     # Identify file extensions with most findings
-    extension_findings = {}
+    extension_findings: Dict[str, int] = {}
     for finding in findings:
         if hasattr(finding, 'location') and finding.location.path:
             ext = finding.location.path.suffix.lower()

@@ -224,7 +224,8 @@ class MetadataAnalyzer(BaseAnalyzer):
             message = commit.message
 
             for pattern in SENSITIVE_PATTERNS:
-                matches = re.finditer(pattern, message, re.IGNORECASE)
+                message_str = message if isinstance(message, str) else message.decode('utf-8', errors='ignore')
+                matches = re.finditer(pattern, message_str, re.IGNORECASE)
 
                 for match in matches:
                     # Extract the matched text for the finding
@@ -242,7 +243,7 @@ class MetadataAnalyzer(BaseAnalyzer):
                             severity=Severity.MEDIUM,
                             type=FindingType.SECRET,
                             location=Location(
-                                path=Path(self.repo.working_dir),
+                                path=Path(self.repo.working_dir) if self.repo else Path("."),
                             ),
                             analyzer=self.name,
                             confidence=0.7,
@@ -300,7 +301,7 @@ class MetadataAnalyzer(BaseAnalyzer):
                         severity=Severity.LOW,
                         type=FindingType.SUSPICIOUS,
                         location=Location(
-                            path=Path(self.repo.working_dir),
+                            path=Path(self.repo.working_dir) if self.repo else Path("."),
                         ),
                         analyzer=self.name,
                         confidence=0.5,  # Lower confidence as this is somewhat speculative
@@ -358,7 +359,7 @@ class MetadataAnalyzer(BaseAnalyzer):
                         severity=Severity.LOW,
                         type=FindingType.SUSPICIOUS,
                         location=Location(
-                            path=Path(self.repo.working_dir),
+                            path=Path(self.repo.working_dir) if self.repo else Path("."),
                         ),
                         analyzer=self.name,
                         confidence=0.6,
@@ -428,7 +429,7 @@ class MetadataAnalyzer(BaseAnalyzer):
                             severity=Severity.MEDIUM,
                             type=FindingType.SUSPICIOUS,
                             location=Location(
-                                path=Path(os.path.join(self.repo.working_dir, file_path)),
+                                path=Path(os.path.join(self.repo.working_dir, file_path)) if self.repo else Path(file_path),
                             ),
                             analyzer=self.name,
                             confidence=0.7,
@@ -467,7 +468,7 @@ class MetadataAnalyzer(BaseAnalyzer):
 
         try:
             # Get all commit authors
-            authors = {}
+            authors: Dict[str, int] = {}
             commits = list(self.repo.iter_commits(max_count=self.max_commits))
 
             # Count commits per author

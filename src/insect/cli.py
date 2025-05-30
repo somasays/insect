@@ -5,7 +5,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from rich.console import Console
 
@@ -368,14 +368,18 @@ def main(args: Optional[List[str]] = None) -> int:
                 return 1
 
             # Summarize scan results
-            metadata = scan_results.get("scan_metadata", {})
+            if isinstance(scan_results, dict):
+                metadata_raw: Any = scan_results.get("scan_metadata", {})
+                metadata: Dict[str, Any] = metadata_raw if isinstance(metadata_raw, dict) else {}
+            else:
+                metadata = {}
             findings = scan_results.get("findings", [])
 
             console.print("\n[bold green]Scan completed successfully in container[/bold green]")
             console.print(f"Repository: {repo_url}")
             console.print(f"Commit: {commit_hash}")
-            console.print(f"Files scanned: {metadata.get('file_count', 0)}")
-            console.print(f"Issues found: {metadata.get('finding_count', 0)}")
+            console.print(f"Files scanned: {metadata.get('file_count', 0) if isinstance(metadata, dict) else 0}")
+            console.print(f"Issues found: {metadata.get('finding_count', 0) if isinstance(metadata, dict) else 0}")
 
             # Save report if requested
             if parsed_args.report_path:
@@ -385,14 +389,18 @@ def main(args: Optional[List[str]] = None) -> int:
 
             # If no issues were found or user confirmation
             should_clone = True
-            if metadata.get("finding_count", 0) > 0:
+            if (isinstance(metadata, dict) and metadata.get("finding_count", 0) > 0):
                 console.print("\n[bold yellow]Security issues were found in the repository.[/bold yellow]")
 
                 # Show a sample of findings
                 if findings:
                     console.print("\n[bold]Sample of issues found:[/bold]")
                     for i, finding in enumerate(findings[:3], 1):
-                        console.print(f"{i}. [{finding.get('severity', 'low')}] {finding.get('title', 'Unknown issue')}")
+                        finding_item: Any = finding  # Explicit type hint for mypy
+                        if isinstance(finding_item, dict):
+                            console.print(f"{i}. [{finding_item.get('severity', 'low')}] {finding_item.get('title', 'Unknown issue')}")
+                        else:
+                            console.print(f"{i}. [{finding_item.severity}] {finding_item.title}")
 
                     if len(findings) > 3:
                         console.print(f"... and {len(findings) - 3} more issues")
@@ -490,11 +498,12 @@ def main(args: Optional[List[str]] = None) -> int:
 
             # Run the scan
             with console.status("[bold blue]Scanning repository...[/bold blue]"):
-                findings, metadata = core.scan_repository(
+                scan_findings, metadata = core.scan_repository(
                     Path(parsed_args.repo_path),
                     config,
                     enabled_analyzers=enabled_analyzers
                 )
+                findings_list = scan_findings  # Use scan findings
 
             # Display scan results
             if not metadata:  # Check if metadata is empty (scan failed)
@@ -509,9 +518,12 @@ def main(args: Optional[List[str]] = None) -> int:
                 # Create formatter for the requested format
                 formatter = create_formatter(output_format, config)
 
+                # Ensure findings are in the right format for the formatter
+                findings_for_formatter: List[Any] = findings_list if 'findings_list' in locals() else findings  # type: ignore[assignment]
+
                 if output_path:
                     # Write report to file
-                    output_file = formatter.write_report(findings, metadata, output_path)
+                    output_file = formatter.write_report(findings_for_formatter, metadata, output_path)
                     console.print(f"\n[bold green]Report written to:[/bold green] {output_file}")
                 else:
                     # If format is text and no output file specified, use Rich for interactive output
@@ -545,28 +557,44 @@ def main(args: Optional[List[str]] = None) -> int:
                                 console.print(f"  [blue]Low: {severity_counts['low']}[/blue]")
 
                         # Display detailed findings
-                        if findings:
+                        findings_to_show: Any = findings_list if 'findings_list' in locals() else findings
+                        if findings_to_show:
                             console.print("\n[bold]Issues Details:[/bold]")
-                            for i, finding in enumerate(findings[:10], 1):  # Show at most 10 findings
+                            for i, finding in enumerate(findings_to_show[:10], 1):  # Show at most 10 findings
+                                finding_detail: Any = finding  # Explicit type hint for mypy
                                 color = {
                                     "critical": "bold red",
                                     "high": "red",
                                     "medium": "yellow",
                                     "low": "blue"
-                                }.get(finding.severity.value, "white")
+                                }.get(
+                                    finding_detail.get('severity', 'low') if isinstance(finding_detail, dict) else finding_detail.severity.value,
+                                    "white"
+                                )
 
-                                console.print(f"{i}. [{color}][{finding.severity.value.upper()}][/{color}] {finding.title}")
-                                console.print(f"   {finding.location}")
-                                console.print(f"   {finding.description}")
+                                if isinstance(finding_detail, dict):
+                                    severity = finding_detail.get('severity', 'low')
+                                    title = finding_detail.get('title', 'Unknown issue')
+                                    location = finding_detail.get('location', 'Unknown location')
+                                    description = finding_detail.get('description', 'No description')
+                                else:
+                                    severity = finding_detail.severity.value
+                                    title = finding_detail.title
+                                    location = str(finding_detail.location)
+                                    description = finding_detail.description
+
+                                console.print(f"{i}. [{color}][{severity.upper()}][/{color}] {title}")
+                                console.print(f"   {location}")
+                                console.print(f"   {description}")
                                 console.print()
 
                             # If there are more findings than we showed
-                            if len(findings) > 10:
-                                console.print(f"... and {len(findings) - 10} more issues.")
+                            if len(findings_to_show) > 10:
+                                console.print(f"... and {len(findings_to_show) - 10} more issues.")
                                 console.print("Use --output and --format to get a full report.")
                     else:
                         # For other formats without output file, print to stdout
-                        report = formatter.format_findings(findings, metadata)
+                        report = formatter.format_findings(findings_for_formatter, metadata)
 
             except Exception as e:
                 logger.error(f"Error generating report: {e}", exc_info=True)

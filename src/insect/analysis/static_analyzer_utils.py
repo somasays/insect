@@ -37,7 +37,7 @@ def check_tool_availability(
     tool_name: str,
     analyzer_name: str,
     required: bool = True,  # noqa: ARG001
-    version_args: List[str] = None,
+    version_args: Optional[List[str]] = None,
 ) -> Tuple[bool, Optional[str]]:
     """Check if a required external tool is available in the PATH.
 
