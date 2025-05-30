@@ -13,6 +13,7 @@ Each analyzer implements specific detection rules for its target file type.
 from insect.analysis.binary_analyzer import BinaryAnalyzer
 from insect.analysis.javascript_static_analyzer import JavaScriptStaticAnalyzer
 from insect.analysis.python_static_analyzer import PythonStaticAnalyzer
+from insect.analysis.secret_analyzer import SecretAnalyzer
 from insect.analysis.vulnerability_analyzer import VulnerabilityAnalyzer
 
-__all__ = ["PythonStaticAnalyzer", "JavaScriptStaticAnalyzer", "BinaryAnalyzer", "VulnerabilityAnalyzer"]
+__all__ = ["PythonStaticAnalyzer", "JavaScriptStaticAnalyzer", "BinaryAnalyzer", "VulnerabilityAnalyzer", "SecretAnalyzer"]
