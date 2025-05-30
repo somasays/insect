@@ -13,9 +13,7 @@ authors = [
     {name = "Somasundaram Sekar", email = "somasundaram@outlook.com"}
 ]
 keywords = ["security", "static-analysis", "git", "vulnerability-scanner", "malware-detection"]
-homepage = "https://github.com/somasays/insect"
-repository = "https://github.com/somasays/insect"
-documentation = "https://github.com/somasays/insect#readme"
+urls = {Homepage = "https://github.com/somasays/insect", Repository = "https://github.com/somasays/insect", Documentation = "https://github.com/somasays/insect#readme"}
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
