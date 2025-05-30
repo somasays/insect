@@ -107,7 +107,7 @@ class EntropyAnalyzer:
 class SecretAnalyzer(BaseAnalyzer):
     """Enhanced analyzer for detecting secrets with entropy analysis."""
     
-    name = "secret"
+    name = "secrets"
     description = "Enhanced secret detection with entropy analysis and pattern matching"
     supported_extensions = {
         ".py", ".js", ".ts", ".jsx", ".tsx", ".json", ".yaml", ".yml", 

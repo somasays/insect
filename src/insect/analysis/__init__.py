@@ -128,3 +128,13 @@ def create_analyzer_instance(
 
 
 # Import analyzers to register them
+from . import binary_analyzer
+from . import javascript_static_analyzer  
+from . import metadata_analyzer
+from . import python_static_analyzer
+from . import vulnerability_analyzer
+from . import secret_analyzer
+from . import static_analyzer
+from . import container_analyzer
+from .config import config_analyzer
+from .shell import analyzer

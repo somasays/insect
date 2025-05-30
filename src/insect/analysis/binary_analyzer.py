@@ -58,7 +58,7 @@ HIGH_ENTROPY_THRESHOLD = 7.0
 class BinaryAnalyzer(BaseAnalyzer):
     """Static analyzer for binary files to detect potentially malicious properties."""
 
-    name = "binary_analyzer"
+    name = "binary"
     description = "Static analyzer for binary files to detect malicious properties"
     supported_extensions = BINARY_EXTENSIONS
 

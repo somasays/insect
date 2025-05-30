@@ -527,7 +527,7 @@ KNOWN_VULNERABLE_PYTHON_PACKAGES = {
 class ConfigAnalyzer(BaseAnalyzer):
     """Analyzer for various configuration files to detect security issues."""
 
-    name = "config_analyzer"
+    name = "config"
     description = "Analyzer for configuration files to detect security misconfigurations and issues"
     supported_extensions = {
         ".dockerfile",

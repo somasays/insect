@@ -47,7 +47,7 @@ LARGE_BINARY_THRESHOLD = 10 * 1024 * 1024  # 10 MB
 class MetadataAnalyzer(BaseAnalyzer):
     """Static analyzer for Git repository metadata to detect suspicious patterns."""
 
-    name = "metadata_analyzer"
+    name = "metadata"
     description = "Analyzes Git repository metadata for suspicious patterns"
     supported_extensions = {"*"}  # Operates on the repository level, not individual files
 
