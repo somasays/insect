@@ -118,6 +118,58 @@ DEPENDENCIES = {
             "win32": "Install using Chocolatey: choco install shellcheck",
         },
     ),
+    "trivy": DependencyInfo(
+        name="trivy",
+        description="A comprehensive vulnerability scanner for containers and other artifacts",
+        required=False,
+        version_args=["--version"],
+        min_version="0.30.0",
+        install_instructions={
+            "default": "https://aquasecurity.github.io/trivy/latest/getting-started/installation/",
+            "darwin": "brew install trivy",
+            "linux": "wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add - && echo 'deb https://aquasecurity.github.io/trivy-repo/deb generic main' | sudo tee -a /etc/apt/sources.list && sudo apt-get update && sudo apt-get install trivy",
+            "win32": "choco install trivy",
+        },
+    ),
+    "grype": DependencyInfo(
+        name="grype",
+        description="A vulnerability scanner for container images and filesystems",
+        required=False,
+        version_args=["version"],
+        min_version="0.60.0",
+        install_instructions={
+            "default": "curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin",
+            "darwin": "brew install grype",
+            "linux": "curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin",
+            "win32": "Download from https://github.com/anchore/grype/releases",
+        },
+    ),
+    "safety": DependencyInfo(
+        name="safety",
+        description="A command line tool that checks Python dependencies for known security vulnerabilities",
+        required=False,
+        version_args=["--version"],
+        min_version="2.0.0",
+        install_instructions={
+            "default": "pip install safety",
+            "darwin": "pip install safety",
+            "linux": "pip install safety",
+            "win32": "pip install safety",
+        },
+    ),
+    "npm": DependencyInfo(
+        name="npm",
+        description="Node.js package manager with audit capabilities",
+        required=False,
+        version_args=["--version"],
+        min_version="8.0.0",
+        install_instructions={
+            "default": "https://nodejs.org/en/download/",
+            "darwin": "brew install node",
+            "linux": "curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - && sudo apt-get install -y nodejs",
+            "win32": "Download from https://nodejs.org/en/download/",
+        },
+    ),
 }
 
 
