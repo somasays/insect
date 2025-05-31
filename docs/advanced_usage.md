@@ -1,3 +1,9 @@
+---
+layout: page
+title: Advanced Usage
+nav_order: 5
+---
+
 # Advanced Usage and Customization
 
 This guide covers advanced usage scenarios and customization options for Insect.
@@ -5,6 +11,7 @@ This guide covers advanced usage scenarios and customization options for Insect.
 ## Table of Contents
 
 - [Custom Rule Development](#custom-rule-development)
+- [Browser Security Configuration](#browser-security-configuration)
 - [CI/CD Integration](#cicd-integration)
 - [Performance Optimization](#performance-optimization)
 - [External Tool Integration](#external-tool-integration)
@@ -69,6 +76,264 @@ def register_rules():
     from .custom_rules import CUSTOM_PYTHON_RULES
     
     register_rules(CUSTOM_PYTHON_RULES)
+```
+
+## Browser Security Configuration
+
+Insect includes comprehensive browser data theft detection capabilities that can be customized for different security requirements.
+
+### Basic Browser Security Configuration
+
+```toml
+# browser-security.toml
+[analyzers]
+browser_theft = true
+secrets = true
+static = true
+
+[browser_theft]
+enable_browser_history_detection = true
+enable_browser_storage_detection = true
+enable_credential_detection = true
+enable_extension_detection = true
+
+[severity]
+min_level = "medium"
+
+[patterns]
+# Focus on web-related files
+include = ["*.js", "*.ts", "*.jsx", "*.tsx", "*.html", "*.php", "*.py"]
+exclude = [
+    "node_modules/*",
+    "test/*",
+    "tests/*",
+    "*.min.js"
+]
+```
+
+### Enterprise Browser Security Configuration
+
+For enterprise environments requiring strict browser security controls:
+
+```toml
+# enterprise-browser-security.toml
+[general]
+include_hidden = true
+max_depth = 15
+
+[analyzers]
+browser_theft = true
+secrets = true
+static = true
+config = true
+
+[browser_theft]
+enable_browser_history_detection = true
+enable_browser_storage_detection = true
+enable_credential_detection = true
+enable_extension_detection = true
+
+[severity]
+min_level = "low"  # Catch all potential issues
+
+# Strict patterns for enterprise security
+[patterns]
+include = ["*"]
+exclude = [
+    # Only exclude obvious non-code files
+    "*.git/*",
+    "*.exe",
+    "*.bin",
+    "*.jpg",
+    "*.png",
+    "*.gif"
+]
+
+# Don't allow any browser theft patterns
+[allowlist]
+findings = []  # No exceptions for browser theft
+```
+
+### Browser Extension Security Configuration
+
+Specialized configuration for scanning browser extensions:
+
+```toml
+# extension-security.toml
+[analyzers]
+browser_theft = true
+secrets = true
+javascript_static_analyzer = true
+
+[browser_theft]
+enable_browser_history_detection = true
+enable_browser_storage_detection = true
+enable_credential_detection = true
+enable_extension_detection = true
+
+[patterns]
+include = [
+    "*.js",
+    "*.html",
+    "*.json",
+    "manifest.json",
+    "content_scripts/*",
+    "background/*",
+    "popup/*"
+]
+
+[severity]
+min_level = "medium"
+```
+
+### Custom Browser Security Rules
+
+You can extend browser security detection with custom rules:
+
+```python
+# custom_browser_rules.py
+import re
+from insect.analysis.static_analyzer_rules import StaticDetectionRule
+from insect.finding import FindingType, Severity
+
+CUSTOM_BROWSER_RULES = [
+    StaticDetectionRule(
+        rule_id="CUSTOM-BROWSER-001",
+        language="javascript",
+        title="Suspicious WebRTC data channel usage",
+        description="Code uses WebRTC data channels in ways that could bypass network monitoring",
+        severity=Severity.HIGH,
+        finding_type=FindingType.SUSPICIOUS,
+        regex_pattern=re.compile(
+            r"RTCDataChannel.*(?:send|onmessage).*(?:credentials?|passwords?|tokens?)",
+            re.IGNORECASE
+        ),
+        remediation="Review WebRTC data channel usage for potential data exfiltration",
+        references=["https://developer.mozilla.org/en-US/docs/Web/API/RTCDataChannel"],
+        cwe_id="CWE-200",
+        cvss_score=7.0,
+    ),
+    StaticDetectionRule(
+        rule_id="CUSTOM-BROWSER-002",
+        language="javascript",
+        title="Suspicious clipboard API usage",
+        description="Code accesses clipboard API in ways that could steal sensitive data",
+        severity=Severity.MEDIUM,
+        finding_type=FindingType.SUSPICIOUS,
+        regex_pattern=re.compile(
+            r"navigator\.clipboard\.(?:read|readText).*(?:password|secret|token|key)",
+            re.IGNORECASE
+        ),
+        remediation="Ensure clipboard access is legitimate and user-consented",
+        references=["https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API"],
+        cwe_id="CWE-200",
+        cvss_score=6.0,
+    ),
+]
+```
+
+### Browser Security Scanning Workflows
+
+#### Automated Browser Extension Review
+
+```bash
+#!/bin/bash
+# review-browser-extension.sh
+
+EXTENSION_PATH=$1
+REPORT_DIR="./security-reports"
+
+if [ -z "$EXTENSION_PATH" ]; then
+    echo "Usage: $0 <extension-path>"
+    exit 1
+fi
+
+mkdir -p "$REPORT_DIR"
+
+# Run comprehensive browser security scan
+echo "Scanning browser extension at: $EXTENSION_PATH"
+insect scan "$EXTENSION_PATH" \
+    --config extension-security.toml \
+    -f html \
+    -o "$REPORT_DIR/extension-security-report.html" \
+    --severity medium
+
+# Extract critical findings
+insect scan "$EXTENSION_PATH" \
+    --config extension-security.toml \
+    -f json \
+    -o "$REPORT_DIR/extension-findings.json" \
+    --severity critical
+
+# Check for browser theft patterns
+if grep -q '"analyzer": "browser_theft"' "$REPORT_DIR/extension-findings.json"; then
+    echo "❌ CRITICAL: Browser data theft patterns detected!"
+    echo "Review the detailed report at: $REPORT_DIR/extension-security-report.html"
+    exit 1
+else
+    echo "✅ No critical browser security issues detected"
+    exit 0
+fi
+```
+
+#### Web Application Security Pipeline
+
+```yaml
+# web-app-security-pipeline.yml
+name: Web Application Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  browser-security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+          
+      - name: Install Insect
+        run: pip install insect
+        
+      - name: Scan for browser security issues
+        run: |
+          insect scan . \
+            --config .insect/browser-security.toml \
+            -f json \
+            -o browser-security-findings.json \
+            --severity medium
+            
+      - name: Check for browser theft patterns
+        run: |
+          if grep -q '"analyzer": "browser_theft"' browser-security-findings.json; then
+            echo "Browser security violations detected!"
+            jq '.findings[] | select(.analyzer == "browser_theft") | {id, title, severity, file: .location.path, line: .location.line_start}' browser-security-findings.json
+            exit 1
+          fi
+          
+      - name: Generate security report
+        if: always()
+        run: |
+          insect scan . \
+            --config .insect/browser-security.toml \
+            -f html \
+            -o browser-security-report.html
+            
+      - name: Upload security artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: browser-security-results
+          path: |
+            browser-security-findings.json
+            browser-security-report.html
 ```
 
 ## CI/CD Integration

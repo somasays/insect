@@ -12,6 +12,7 @@ config = true
 binary = true
 metadata = true
 secrets = true
+browser_theft = true
 
 # File pattern settings
 [patterns]
@@ -47,3 +48,10 @@ max_age_days = 30  # Maximum age of cache entries in days
 # Progress bar settings
 [progress]
 enabled = true  # Enable or disable the progress bar
+
+# Browser theft detection settings
+[browser_theft]
+enable_browser_history_detection = true
+enable_browser_storage_detection = true
+enable_credential_detection = true
+enable_extension_detection = true

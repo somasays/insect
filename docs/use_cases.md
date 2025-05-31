@@ -1,3 +1,9 @@
+---
+layout: page
+title: Use Cases
+nav_order: 4
+---
+
 # Insect Use Cases
 
 This document provides real-world use cases for Insect in different environments and scenarios.
@@ -8,6 +14,7 @@ This document provides real-world use cases for Insect in different environments
 - [Third-Party Code Validation](#third-party-code-validation)
 - [Corporate Security Compliance](#corporate-security-compliance)
 - [Continuous Security Monitoring](#continuous-security-monitoring)
+- [Browser Security Protection](#browser-security-protection)
 - [Security Education](#security-education)
 
 ## DevSecOps Integration
@@ -246,6 +253,166 @@ Ongoing surveillance for security issues.
 - Objective comparison between branches
 - Visibility into security impact of changes
 - Data for informed merge decisions
+
+## Browser Security Protection
+
+Protecting users from malicious repositories that attempt to steal browser data.
+
+### Use Case: Browser Extension Security Review
+
+**Scenario**: A security team needs to evaluate browser extensions before allowing them in the corporate environment.
+
+**Implementation**:
+
+1. Obtain the browser extension source code:
+   ```bash
+   git clone https://github.com/example/browser-extension.git
+   cd browser-extension
+   ```
+
+2. Run Insect with browser theft detection enabled:
+   ```bash
+   insect scan . -f html -o extension-security-report.html --severity medium
+   ```
+
+3. Review specific browser security findings:
+   - Check for unauthorized cookie access
+   - Identify attempts to read browser storage
+   - Flag suspicious extension API usage
+   - Detect data exfiltration patterns
+
+4. Create a security assessment report
+
+**Benefits**:
+- Identifies browser data theft attempts before deployment
+- Provides detailed documentation for security reviews
+- Helps maintain corporate browser security policies
+- Protects users from malicious extensions
+
+### Use Case: Open Source Repository Vetting
+
+**Scenario**: A developer wants to verify that a GitHub repository doesn't contain browser theft code before cloning and running it locally.
+
+**Implementation**:
+
+1. Clone the repository in a safe environment:
+   ```bash
+   git clone https://github.com/suspicious/repository.git
+   cd repository
+   ```
+
+2. Run a comprehensive browser security scan:
+   ```bash
+   insect scan . --config browser-security.toml -f json -o security-assessment.json
+   ```
+
+   Where `browser-security.toml` contains:
+   ```toml
+   [analyzers]
+   browser_theft = true
+   secrets = true
+   static = true
+   
+   [browser_theft]
+   enable_browser_history_detection = true
+   enable_browser_storage_detection = true
+   enable_credential_detection = true
+   enable_extension_detection = true
+   
+   [severity]
+   min_level = "medium"
+   ```
+
+3. Review findings for browser data theft patterns:
+   - Browser history/cookies access
+   - Password extraction attempts
+   - Session hijacking code
+   - Storage manipulation
+   - Data exfiltration
+
+4. Make an informed decision about repository safety
+
+**Benefits**:
+- Protects against browser data theft before execution
+- Provides security assessment of untrusted repositories
+- Helps developers make informed decisions about code safety
+- Reduces risk of exposing sensitive browser data
+
+### Use Case: Web Application Security Scanning
+
+**Scenario**: A web development team wants to ensure their application doesn't inadvertently include patterns that could be used for browser data theft.
+
+**Implementation**:
+
+1. Scan the web application codebase:
+   ```bash
+   insect scan ./webapp --include-pattern "*.js" --include-pattern "*.html" --include-pattern "*.php" -f html -o webapp-security.html
+   ```
+
+2. Review findings for potentially dangerous patterns:
+   - Unsafe localStorage/sessionStorage usage
+   - Unprotected cookie handling
+   - XSS vulnerabilities that could lead to data theft
+   - Client-side credential handling
+
+3. Implement security fixes:
+   - Add proper input sanitization
+   - Use secure cookie attributes
+   - Implement Content Security Policy (CSP)
+   - Review data storage practices
+
+4. Re-scan to verify improvements
+
+**Benefits**:
+- Prevents accidental implementation of dangerous patterns
+- Ensures web applications follow browser security best practices
+- Protects users from potential data theft
+- Helps meet security compliance requirements
+
+### Use Case: Supply Chain Security for Web Dependencies
+
+**Scenario**: A company needs to verify that third-party JavaScript libraries don't contain browser data theft code.
+
+**Implementation**:
+
+1. Create a script to scan npm packages before installation:
+   ```bash
+   #!/bin/bash
+   PACKAGE_NAME=$1
+   TEMP_DIR=$(mktemp -d)
+   
+   # Download package source
+   cd $TEMP_DIR
+   npm pack $PACKAGE_NAME
+   tar -xzf *.tgz
+   
+   # Scan for browser theft patterns
+   insect scan package/ -f json -o package-security.json --severity medium
+   
+   # Check results
+   if grep -q '"analyzer": "browser_theft"' package-security.json; then
+       echo "WARNING: Browser theft patterns detected in $PACKAGE_NAME"
+       cat package-security.json
+       exit 1
+   else
+       echo "Package $PACKAGE_NAME appears safe for browser security"
+   fi
+   
+   # Cleanup
+   rm -rf $TEMP_DIR
+   ```
+
+2. Integrate into package installation workflow:
+   ```bash
+   ./check-package-security.sh suspicious-package
+   npm install suspicious-package  # Only if security check passes
+   ```
+
+**Benefits**:
+- Prevents installation of packages with browser theft capabilities
+- Protects users from malicious npm packages
+- Maintains supply chain security
+- Provides automated security validation for dependencies
 
 ## Security Education
 

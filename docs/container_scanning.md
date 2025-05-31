@@ -1,3 +1,9 @@
+---
+layout: page
+title: Container Scanning
+nav_order: 6
+---
+
 # Running Insect in a Container
 
 Insect provides the ability to run security scans in Docker containers, which offers several advantages:

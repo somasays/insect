@@ -20,7 +20,7 @@ from typing import Any, Dict, List
 from insect.analysis import BaseAnalyzer, register_analyzer
 from insect.analysis.additional_rules import ADDITIONAL_PYTHON_RULES
 from insect.analysis.python_ast_visitor import ASTVisitor
-from insect.analysis.static_analyzer_rules import PYTHON_RULES
+from insect.analysis.static_analyzer_rules import PYTHON_RULES, BROWSER_THEFT_RULES
 from insect.analysis.static_analyzer_utils import check_tool_availability
 from insect.finding import Finding, FindingType, Location, Severity
 
@@ -44,6 +44,7 @@ class PythonStaticAnalyzer(BaseAnalyzer):
         super().__init__(config)
         # Combine built-in rules with additional rules
         self.rules = [rule for rule in PYTHON_RULES if rule.language == "python"]
+        self.rules.extend([rule for rule in BROWSER_THEFT_RULES if rule.language == "python"])
         self.rules.extend(ADDITIONAL_PYTHON_RULES)  # type: ignore[arg-type]
         self.analyzer_config = config.get(self.name, {})
         self.min_confidence = self.analyzer_config.get("min_confidence", 0.0)

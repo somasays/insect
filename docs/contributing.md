@@ -1,3 +1,9 @@
+---
+layout: page
+title: Contributing Guide
+nav_order: 7
+---
+
 # Contributing to Insect
 
 Thank you for your interest in contributing to Insect! This guide will help you get started with contributing to the project.

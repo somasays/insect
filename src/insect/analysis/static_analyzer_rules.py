@@ -268,4 +268,119 @@ JAVASCRIPT_RULES: List[StaticDetectionRule] = [
     ),
 ]
 
+# Browser theft detection rules
+BROWSER_THEFT_RULES: List[StaticDetectionRule] = [
+    # Browser history and cookies access
+    StaticDetectionRule(
+        rule_id="BT101",
+        language="python",
+        title="Browser history file access",
+        description="Code attempts to access browser history or cookie files directly",
+        severity=Severity.HIGH,
+        finding_type=FindingType.SUSPICIOUS,
+        regex_pattern=re.compile(
+            r"(?:History|places\.sqlite|Cookies|cookies\.sqlite|Web Data|"
+            r"Favicons|Bookmarks|Login Data|Preferences)",
+            re.IGNORECASE,
+        ),
+        remediation="Remove direct access to browser files. Use official browser APIs if needed.",
+        references=["https://attack.mitre.org/techniques/T1539/"],
+        cwe_id="CWE-200",
+        cvss_score=7.5,
+    ),
+    # Browser profile directory access
+    StaticDetectionRule(
+        rule_id="BT102",
+        language="python",
+        title="Browser profile directory access",
+        description="Code accesses browser profile directories containing sensitive data",
+        severity=Severity.HIGH,
+        finding_type=FindingType.SUSPICIOUS,
+        regex_pattern=re.compile(
+            r"(?:Chrome|Firefox|Safari|Edge|Opera|Brave)(?:/|\\\\)(?:User Data|Profiles?|"
+            r"Application Support|Library|AppData|\.mozilla|\.config)",
+            re.IGNORECASE,
+        ),
+        remediation="Avoid accessing browser profile directories without user consent.",
+        references=["https://attack.mitre.org/techniques/T1539/"],
+        cwe_id="CWE-200",
+        cvss_score=7.5,
+    ),
+    # Browser password extraction
+    StaticDetectionRule(
+        rule_id="BT103",
+        language="python",
+        title="Browser password extraction attempt",
+        description="Code attempts to extract passwords from browser password stores",
+        severity=Severity.CRITICAL,
+        finding_type=FindingType.SUSPICIOUS,
+        regex_pattern=re.compile(
+            r"(?:Login Data|key4\.db|signons\.sqlite|logins\.json|"
+            r"CryptUnprotectData|Windows Vault|Windows Credential Manager)",
+            re.IGNORECASE,
+        ),
+        remediation="Remove password extraction code. This violates user privacy and security.",
+        references=["https://attack.mitre.org/techniques/T1555/003/"],
+        cwe_id="CWE-522",
+        cvss_score=9.5,
+    ),
+]
+
+# Browser theft detection rules for JavaScript
+JAVASCRIPT_BROWSER_THEFT_RULES: List[StaticDetectionRule] = [
+    # Browser storage manipulation
+    StaticDetectionRule(
+        rule_id="JBT101",
+        language="javascript",
+        title="Suspicious browser storage access",
+        description="Code manipulates browser storage in ways that could steal user data",
+        severity=Severity.MEDIUM,
+        finding_type=FindingType.SUSPICIOUS,
+        regex_pattern=re.compile(
+            r"(?:localStorage|sessionStorage|indexedDB)\.(?:getItem|setItem|clear|"
+            r"removeItem|key|length)",
+            re.IGNORECASE,
+        ),
+        remediation="Ensure storage access is legitimate and follows privacy guidelines.",
+        references=["https://owasp.org/www-community/attacks/DOM_Based_XSS"],
+        cwe_id="CWE-79",
+        cvss_score=6.0,
+    ),
+    # Session hijacking
+    StaticDetectionRule(
+        rule_id="JBT102",
+        language="javascript",
+        title="Browser session hijacking attempt",
+        description="Code attempts to steal or manipulate browser sessions",
+        severity=Severity.CRITICAL,
+        finding_type=FindingType.SUSPICIOUS,
+        regex_pattern=re.compile(
+            r"(?:document\.cookie|getCookie|setCookie|session.*token|"
+            r"JSESSIONID|PHPSESSID|ASP\.NET_SessionId)",
+            re.IGNORECASE,
+        ),
+        remediation="Remove session hijacking code. Implement proper session management.",
+        references=["https://attack.mitre.org/techniques/T1539/"],
+        cwe_id="CWE-384",
+        cvss_score=9.0,
+    ),
+    # XSS payload for data theft
+    StaticDetectionRule(
+        rule_id="JBT103",
+        language="javascript",
+        title="XSS payload for browser data theft",
+        description="XSS payload designed to steal browser data",
+        severity=Severity.HIGH,
+        finding_type=FindingType.VULNERABILITY,
+        regex_pattern=re.compile(
+            r"<script[^>]*>.*(?:document\.cookie|localStorage|sessionStorage)",
+            re.IGNORECASE | re.DOTALL,
+        ),
+        remediation="Remove XSS payloads. Sanitize input and use Content Security Policy.",
+        references=["https://owasp.org/www-community/attacks/xss/"],
+        cwe_id="CWE-79",
+        cvss_score=8.0,
+    ),
+]
+
 # Additional rules are loaded and extended in each analyzer module

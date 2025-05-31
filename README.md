@@ -123,6 +123,14 @@ Insect can detect a wide range of security issues, including:
 - **Path Traversal**: Directory traversal vulnerabilities
 - **Obfuscated Code**: Base64 encoded payloads and suspicious patterns
 - **Configuration Issues**: Insecure default settings and misconfigurations
+- **Browser Data Theft**: Malicious code that attempts to steal browser data including:
+  - Browser history and cookies access
+  - Browser storage manipulation (localStorage, sessionStorage, indexedDB)
+  - Browser session hijacking and cookie theft
+  - Browser password extraction from password managers
+  - Browser form data and autofill theft
+  - Browser extension manipulation and injection
+  - Browser cache access and data exfiltration
 
 For examples of each type, see the [Security Examples](docs/security_examples.md) documentation.
 

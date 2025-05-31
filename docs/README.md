@@ -1,3 +1,8 @@
+---
+layout: home
+title: Insect Security Scanner Documentation
+---
+
 # Insect Documentation
 
 Welcome to the Insect documentation! This page serves as an index to all available documentation.

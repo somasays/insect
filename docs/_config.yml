@@ -1,0 +1,84 @@
+# Site configuration for Insect Security Scanner Documentation
+title: Insect Security Scanner
+description: A security-focused CLI tool designed to scan Git repositories for potentially malicious code patterns before execution.
+url: ""
+baseurl: ""
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+theme: minima
+
+# Jekyll theme configuration
+minima:
+  skin: dark
+  social_links:
+    github: somasays/insect
+
+# Navigation structure
+header_pages:
+  - usage.md
+  - security_examples.md
+  - use_cases.md
+  - advanced_usage.md
+  - container_scanning.md
+  - contributing.md
+
+# Collections for better organization
+collections:
+  guides:
+    output: true
+    permalink: /:collection/:name/
+
+# Default front matter
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "page"
+  - scope:
+      path: ""
+      type: "guides"
+    values:
+      layout: "page"
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Exclude files from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor/
+
+# Syntax highlighting theme
+kramdown:
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: 'highlight'
+    span:
+      line_numbers: false
+    block:
+      line_numbers: false
+
+# SEO settings
+author: Soma
+twitter:
+  username: 
+  card: summary
+
+logo: /assets/images/insect-logo.png
+
+# Google Analytics (optional)
+# google_analytics: UA-XXXXXXXX-X
+
+# Security headers
+webrick:
+  headers:
+    X-Frame-Options: DENY
+    X-Content-Type-Options: nosniff
+    X-XSS-Protection: 1; mode=block

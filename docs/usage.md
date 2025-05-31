@@ -1,3 +1,9 @@
+---
+layout: page
+title: Usage Guide
+nav_order: 2
+---
+
 # Insect Usage Guide
 
 Insect is a security-focused CLI tool designed to scan Git repositories for potentially malicious code patterns before execution. It uses a combination of static analysis, configuration checks, and metadata examination to identify security risks in code.
@@ -148,6 +154,7 @@ config = true
 binary = true
 metadata = true
 secrets = true
+browser_theft = true
 
 # File pattern settings
 [patterns]
@@ -183,6 +190,13 @@ max_age_days = 30  # Maximum age of cache entries in days
 # Progress bar settings
 [progress]
 enabled = true  # Enable or disable the progress bar
+
+# Browser theft detection settings
+[browser_theft]
+enable_browser_history_detection = true
+enable_browser_storage_detection = true
+enable_credential_detection = true
+enable_extension_detection = true
 ```
 
 ### Custom Configuration Example
@@ -198,6 +212,8 @@ include_hidden = true
 [analyzers]
 # Disable binary analysis if not needed
 binary = false
+# Enable browser theft detection
+browser_theft = true
 
 [patterns]
 exclude = [
@@ -266,6 +282,20 @@ insect scan /path/to/js-project --exclude-pattern "node_modules/*" --exclude-pat
 
 ```bash
 insect scan /path/to/python-package --exclude-pattern "venv/*" --exclude-pattern "*.pyc" -f json -o py-report.json
+```
+
+### Scanning for Browser Data Theft
+
+```bash
+# Scan specifically for browser data theft patterns
+insect scan /path/to/suspicious-repo --severity medium -f html -o browser-security-report.html
+```
+
+### Scanning Browser Extension Code
+
+```bash
+# Scan browser extension project with focus on security
+insect scan /path/to/browser-extension --include-pattern "*.js" --include-pattern "*.html" -f json -o extension-scan.json
 ```
 
 ### CI/CD Integration Example
