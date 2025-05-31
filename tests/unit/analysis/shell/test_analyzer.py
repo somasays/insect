@@ -1,7 +1,6 @@
 """Unit tests for the ShellScriptAnalyzer."""
 
 import os
-import shutil
 from pathlib import Path
 from typing import Any, Dict
 from unittest.mock import patch
@@ -388,7 +387,9 @@ def test_analyze_empty_file(
     os.remove(file_path)
 
 
-@pytest.mark.skip(reason="ShellCheck integration test skipped - external dependency not required for CI")
+@pytest.mark.skip(
+    reason="ShellCheck integration test skipped - external dependency not required for CI"
+)
 def test_shellcheck_integration(
     test_config: Dict[str, Any], test_files_dir: Path
 ) -> None:
