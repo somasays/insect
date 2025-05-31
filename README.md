@@ -1,8 +1,12 @@
 # Insect Security Scanner
 
-Insect is a security-focused command line tool designed to scan Git repositories for potentially malicious code patterns before execution. It uses a combination of static analysis, configuration checks, and metadata examination to identify security risks in code.
+[![PyPI version](https://badge.fury.io/py/insect.svg)](https://badge.fury.io/py/insect)
+[![Python Version](https://img.shields.io/pypi/pyversions/insect.svg)](https://pypi.org/project/insect/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI/CD Status](https://github.com/somasays/insect/workflows/Test/badge.svg)](https://github.com/somasays/insect/actions)
+[![Release Status](https://github.com/somasays/insect/workflows/Release/badge.svg)](https://github.com/somasays/insect/actions)
 
-![Insect Logo](https://via.placeholder.com/150?text=Insect)
+Insect is a security-focused command line tool designed to scan Git repositories for potentially malicious code patterns before execution. It uses a combination of static analysis, configuration checks, and metadata examination to identify security risks in code.
 
 ## Features
 
