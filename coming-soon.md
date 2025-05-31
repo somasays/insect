@@ -10,11 +10,11 @@
 - [x] Detect credential harvesting from browser password stores
 
 ### Cryptocurrency Wallet Protection  
-- [ ] Scan for wallet file access patterns (wallet.dat, keystore files)
-- [ ] Detect private key extraction attempts
-- [ ] Identify seed phrase harvesting code
-- [ ] Flag suspicious crypto API interactions
-- [ ] Monitor for wallet address enumeration
+- [x] Scan for wallet file access patterns (wallet.dat, keystore files)
+- [x] Detect private key extraction attempts
+- [x] Identify seed phrase harvesting code
+- [x] Flag suspicious crypto API interactions
+- [x] Monitor for wallet address enumeration
 
 ### Additional Security Enhancements
 - [ ] System information gathering detection

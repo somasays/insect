@@ -131,6 +131,7 @@ def create_analyzer_instance(
 from . import binary_analyzer  # noqa: F401, E402
 from . import browser_theft_analyzer  # noqa: F401, E402
 from . import container_analyzer  # noqa: F401, E402
+from . import crypto_wallet_analyzer  # noqa: F401, E402
 from . import javascript_static_analyzer  # noqa: F401, E402
 from . import metadata_analyzer  # noqa: F401, E402
 from . import python_static_analyzer  # noqa: F401, E402

@@ -13,6 +13,7 @@ binary = true
 metadata = true
 secrets = true
 browser_theft = true
+crypto_wallet = true
 
 # File pattern settings
 [patterns]
@@ -55,3 +56,11 @@ enable_browser_history_detection = true
 enable_browser_storage_detection = true
 enable_credential_detection = true
 enable_extension_detection = true
+
+# Cryptocurrency wallet theft detection settings
+[crypto_wallet]
+enable_wallet_file_detection = true
+enable_private_key_detection = true
+enable_seed_phrase_detection = true
+enable_crypto_api_detection = true
+enable_address_enumeration_detection = true
