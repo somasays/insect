@@ -78,191 +78,209 @@ class BrowserTheftAnalyzer(BaseAnalyzer):
 
         # Browser history and cookies theft
         if self.enable_browser_history_detection:
-            patterns.extend([
-                {
-                    "id": "BROWSER_HISTORY_ACCESS",
-                    "title": "Browser history access detected",
-                    "description": "Code attempts to access browser history files or DBs",
-                    "severity": Severity.HIGH,
-                    "pattern": re.compile(
-                        r"(?:History|places\.sqlite|Cookies|cookies\.sqlite|Web Data|"
-                        r"Favicons|Bookmarks|Login Data|Preferences|Local State|"
-                        r"Current Session|Current Tabs|Last Session|Last Tabs)",
-                        re.IGNORECASE
-                    ),
-                    "finding_type": FindingType.SUSPICIOUS,
-                    "references": ["https://attack.mitre.org/techniques/T1539/"],
-                    "cwe_id": "CWE-200",
-                },
-                {
-                    "id": "BROWSER_PROFILE_PATH",
-                    "title": "Browser profile directory access",
-                    "description": "Code accesses browser profile dirs with sensitive data",
-                    "severity": Severity.HIGH,
-                    "pattern": re.compile(
-                        r"(?:Chrome|Firefox|Safari|Edge|Opera|Brave).*?(?:User Data|Profiles?|"
-                        r"Application Support|Library|AppData|\.mozilla|\.config)",
-                        re.IGNORECASE
-                    ),
-                    "finding_type": FindingType.SUSPICIOUS,
-                    "references": ["https://attack.mitre.org/techniques/T1539/"],
-                    "cwe_id": "CWE-200",
-                },
-            ])
+            patterns.extend(
+                [
+                    {
+                        "id": "BROWSER_HISTORY_ACCESS",
+                        "title": "Browser history access detected",
+                        "description": "Code attempts to access browser history files or DBs",
+                        "severity": Severity.HIGH,
+                        "pattern": re.compile(
+                            r"(?:History|places\.sqlite|Cookies|cookies\.sqlite|Web Data|"
+                            r"Favicons|Bookmarks|Login Data|Preferences|Local State|"
+                            r"Current Session|Current Tabs|Last Session|Last Tabs)",
+                            re.IGNORECASE,
+                        ),
+                        "finding_type": FindingType.SUSPICIOUS,
+                        "references": ["https://attack.mitre.org/techniques/T1539/"],
+                        "cwe_id": "CWE-200",
+                    },
+                    {
+                        "id": "BROWSER_PROFILE_PATH",
+                        "title": "Browser profile directory access",
+                        "description": "Code accesses browser profile dirs with sensitive data",
+                        "severity": Severity.HIGH,
+                        "pattern": re.compile(
+                            r"(?:Chrome|Firefox|Safari|Edge|Opera|Brave).*?(?:User Data|Profiles?|"
+                            r"Application Support|Library|AppData|\.mozilla|\.config)",
+                            re.IGNORECASE,
+                        ),
+                        "finding_type": FindingType.SUSPICIOUS,
+                        "references": ["https://attack.mitre.org/techniques/T1539/"],
+                        "cwe_id": "CWE-200",
+                    },
+                ]
+            )
 
         # Browser storage theft (localStorage, sessionStorage, indexedDB)
         if self.enable_browser_storage_detection:
-            patterns.extend([
-                {
-                    "id": "BROWSER_STORAGE_ACCESS",
-                    "title": "Browser storage manipulation detected",
-                    "description": "Code manipulates browser storage mechanisms to steal or exfiltrate data",
-                    "severity": Severity.MEDIUM,
-                    "pattern": re.compile(
-                        r"(?:localStorage|sessionStorage|indexedDB)\.(?:getItem|setItem|clear|"
-                        r"removeItem|key|length)",
-                        re.IGNORECASE
-                    ),
-                    "finding_type": FindingType.SUSPICIOUS,
-                    "references": ["https://owasp.org/www-community/attacks/DOM_Based_XSS"],
-                    "cwe_id": "CWE-79",
-                },
-                {
-                    "id": "BROWSER_CACHE_ACCESS",
-                    "title": "Browser cache access detected",
-                    "description": "Code attempts to access browser cache files that may contain sensitive data",
-                    "severity": Severity.MEDIUM,
-                    "pattern": re.compile(
-                        r"(?:Cache|cache|Temp|temp)(?:/|\\\\)(?:chrome|firefox|safari|edge|opera|brave)",
-                        re.IGNORECASE
-                    ),
-                    "finding_type": FindingType.SUSPICIOUS,
-                    "references": ["https://attack.mitre.org/techniques/T1005/"],
-                    "cwe_id": "CWE-200",
-                },
-            ])
+            patterns.extend(
+                [
+                    {
+                        "id": "BROWSER_STORAGE_ACCESS",
+                        "title": "Browser storage manipulation detected",
+                        "description": "Code manipulates browser storage mechanisms to steal or exfiltrate data",
+                        "severity": Severity.MEDIUM,
+                        "pattern": re.compile(
+                            r"(?:localStorage|sessionStorage|indexedDB)\.(?:getItem|setItem|clear|"
+                            r"removeItem|key|length)",
+                            re.IGNORECASE,
+                        ),
+                        "finding_type": FindingType.SUSPICIOUS,
+                        "references": [
+                            "https://owasp.org/www-community/attacks/DOM_Based_XSS"
+                        ],
+                        "cwe_id": "CWE-79",
+                    },
+                    {
+                        "id": "BROWSER_CACHE_ACCESS",
+                        "title": "Browser cache access detected",
+                        "description": "Code attempts to access browser cache files that may contain sensitive data",
+                        "severity": Severity.MEDIUM,
+                        "pattern": re.compile(
+                            r"(?:Cache|cache|Temp|temp)(?:/|\\\\)(?:chrome|firefox|safari|edge|opera|brave)",
+                            re.IGNORECASE,
+                        ),
+                        "finding_type": FindingType.SUSPICIOUS,
+                        "references": ["https://attack.mitre.org/techniques/T1005/"],
+                        "cwe_id": "CWE-200",
+                    },
+                ]
+            )
 
         # Browser credential theft
         if self.enable_credential_detection:
-            patterns.extend([
-                {
-                    "id": "BROWSER_PASSWORD_EXTRACTION",
-                    "title": "Browser password extraction detected",
-                    "description": "Code attempts to extract passwords from browser password managers",
-                    "severity": Severity.CRITICAL,
-                    "pattern": re.compile(
-                        r"(?:Login Data|key4\.db|signons\.sqlite|logins\.json|"
-                        r"password|credential|CryptUnprotectData|"
-                        r"Windows Vault|Windows Credential Manager)",
-                        re.IGNORECASE
-                    ),
-                    "finding_type": FindingType.SUSPICIOUS,
-                    "references": ["https://attack.mitre.org/techniques/T1555/003/"],
-                    "cwe_id": "CWE-522",
-                },
-                {
-                    "id": "BROWSER_FORM_DATA_THEFT",
-                    "title": "Browser form data theft detected",
-                    "description": "Code attempts to steal saved form data from browsers",
-                    "severity": Severity.HIGH,
-                    "pattern": re.compile(
-                        r"(?:autofill|form.*data|saved.*forms?|input.*values?|"
-                        r"credit.*card|payment.*info|address.*data)",
-                        re.IGNORECASE
-                    ),
-                    "finding_type": FindingType.SUSPICIOUS,
-                    "references": ["https://attack.mitre.org/techniques/T1555/"],
-                    "cwe_id": "CWE-200",
-                },
-            ])
+            patterns.extend(
+                [
+                    {
+                        "id": "BROWSER_PASSWORD_EXTRACTION",
+                        "title": "Browser password extraction detected",
+                        "description": "Code attempts to extract passwords from browser password managers",
+                        "severity": Severity.CRITICAL,
+                        "pattern": re.compile(
+                            r"(?:Login Data|key4\.db|signons\.sqlite|logins\.json|"
+                            r"password|credential|CryptUnprotectData|"
+                            r"Windows Vault|Windows Credential Manager)",
+                            re.IGNORECASE,
+                        ),
+                        "finding_type": FindingType.SUSPICIOUS,
+                        "references": [
+                            "https://attack.mitre.org/techniques/T1555/003/"
+                        ],
+                        "cwe_id": "CWE-522",
+                    },
+                    {
+                        "id": "BROWSER_FORM_DATA_THEFT",
+                        "title": "Browser form data theft detected",
+                        "description": "Code attempts to steal saved form data from browsers",
+                        "severity": Severity.HIGH,
+                        "pattern": re.compile(
+                            r"(?:autofill|form.*data|saved.*forms?|input.*values?|"
+                            r"credit.*card|payment.*info|address.*data)",
+                            re.IGNORECASE,
+                        ),
+                        "finding_type": FindingType.SUSPICIOUS,
+                        "references": ["https://attack.mitre.org/techniques/T1555/"],
+                        "cwe_id": "CWE-200",
+                    },
+                ]
+            )
 
         # Browser extension manipulation
         if self.enable_extension_detection:
-            patterns.extend([
-                {
-                    "id": "BROWSER_EXTENSION_INJECT",
-                    "title": "Browser extension injection detected",
-                    "description": "Code attempts to inject or manipulate browser extensions",
-                    "severity": Severity.HIGH,
-                    "pattern": re.compile(
-                        r"(?:chrome\.extension|browser\.extension|webExtensions|"
-                        r"Extensions(?:/|\\\\)|addon|plugin|manifest\.json)",
-                        re.IGNORECASE
-                    ),
-                    "finding_type": FindingType.SUSPICIOUS,
-                    "references": ["https://attack.mitre.org/techniques/T1176/"],
-                    "cwe_id": "CWE-506",
-                },
-            ])
+            patterns.extend(
+                [
+                    {
+                        "id": "BROWSER_EXTENSION_INJECT",
+                        "title": "Browser extension injection detected",
+                        "description": "Code attempts to inject or manipulate browser extensions",
+                        "severity": Severity.HIGH,
+                        "pattern": re.compile(
+                            r"(?:chrome\.extension|browser\.extension|webExtensions|"
+                            r"Extensions(?:/|\\\\)|addon|plugin|manifest\.json)",
+                            re.IGNORECASE,
+                        ),
+                        "finding_type": FindingType.SUSPICIOUS,
+                        "references": ["https://attack.mitre.org/techniques/T1176/"],
+                        "cwe_id": "CWE-506",
+                    },
+                ]
+            )
 
         # Session hijacking patterns
-        patterns.extend([
-            {
-                "id": "BROWSER_SESSION_HIJACK",
-                "title": "Browser session hijacking detected",
-                "description": "Code attempts to hijack or steal browser sessions",
-                "severity": Severity.CRITICAL,
-                "pattern": re.compile(
-                    r"(?:document\.cookie|getCookie|setCookie|session.*token|"
-                    r"JSESSIONID|PHPSESSID|ASP\.NET_SessionId|csrf.*token)",
-                    re.IGNORECASE
-                ),
-                "finding_type": FindingType.SUSPICIOUS,
-                "references": ["https://attack.mitre.org/techniques/T1539/"],
-                "cwe_id": "CWE-384",
-            },
-            {
-                "id": "BROWSER_XSS_PAYLOAD",
-                "title": "Cross-site scripting payload detected",
-                "description": "Code contains XSS payloads that could be used to steal browser data",
-                "severity": Severity.HIGH,
-                "pattern": re.compile(
-                    r"<script[^>]*>.*(?:document\.cookie|localStorage|sessionStorage|"
-                    r"window\.location|eval\(|alert\(|confirm\(|prompt\()",
-                    re.IGNORECASE | re.DOTALL
-                ),
-                "finding_type": FindingType.VULNERABILITY,
-                "references": ["https://owasp.org/www-community/attacks/xss/"],
-                "cwe_id": "CWE-79",
-            },
-        ])
+        patterns.extend(
+            [
+                {
+                    "id": "BROWSER_SESSION_HIJACK",
+                    "title": "Browser session hijacking detected",
+                    "description": "Code attempts to hijack or steal browser sessions",
+                    "severity": Severity.CRITICAL,
+                    "pattern": re.compile(
+                        r"(?:document\.cookie|getCookie|setCookie|session.*token|"
+                        r"JSESSIONID|PHPSESSID|ASP\.NET_SessionId|csrf.*token)",
+                        re.IGNORECASE,
+                    ),
+                    "finding_type": FindingType.SUSPICIOUS,
+                    "references": ["https://attack.mitre.org/techniques/T1539/"],
+                    "cwe_id": "CWE-384",
+                },
+                {
+                    "id": "BROWSER_XSS_PAYLOAD",
+                    "title": "Cross-site scripting payload detected",
+                    "description": "Code contains XSS payloads that could be used to steal browser data",
+                    "severity": Severity.HIGH,
+                    "pattern": re.compile(
+                        r"<script[^>]*>.*(?:document\.cookie|localStorage|sessionStorage|"
+                        r"window\.location|eval\(|alert\(|confirm\(|prompt\()",
+                        re.IGNORECASE | re.DOTALL,
+                    ),
+                    "finding_type": FindingType.VULNERABILITY,
+                    "references": ["https://owasp.org/www-community/attacks/xss/"],
+                    "cwe_id": "CWE-79",
+                },
+            ]
+        )
 
         # Data exfiltration patterns specific to browser theft
-        patterns.extend([
-            {
-                "id": "BROWSER_DATA_EXFILTRATION",
-                "title": "Browser data exfiltration detected",
-                "description": "Code attempts to exfiltrate stolen browser data to external sources",
-                "severity": Severity.CRITICAL,
-                "pattern": re.compile(
-                    r"(?:fetch|XMLHttpRequest|axios|request|urllib|requests).*"
-                    r"(?:cookies?|history|passwords?|credentials?|tokens?|sessions?)",
-                    re.IGNORECASE | re.DOTALL
-                ),
-                "finding_type": FindingType.SUSPICIOUS,
-                "references": ["https://attack.mitre.org/techniques/T1041/"],
-                "cwe_id": "CWE-200",
-            },
-        ])
+        patterns.extend(
+            [
+                {
+                    "id": "BROWSER_DATA_EXFILTRATION",
+                    "title": "Browser data exfiltration detected",
+                    "description": "Code attempts to exfiltrate stolen browser data to external sources",
+                    "severity": Severity.CRITICAL,
+                    "pattern": re.compile(
+                        r"(?:fetch|XMLHttpRequest|axios|request|urllib|requests).*"
+                        r"(?:cookies?|history|passwords?|credentials?|tokens?|sessions?)",
+                        re.IGNORECASE | re.DOTALL,
+                    ),
+                    "finding_type": FindingType.SUSPICIOUS,
+                    "references": ["https://attack.mitre.org/techniques/T1041/"],
+                    "cwe_id": "CWE-200",
+                },
+            ]
+        )
 
         # Browser debugging and automation tools (often used maliciously)
-        patterns.extend([
-            {
-                "id": "BROWSER_AUTOMATION_ABUSE",
-                "title": "Browser automation tool abuse detected",
-                "description": "Code uses browser automation tools in suspicious ways that could steal data",
-                "severity": Severity.MEDIUM,
-                "pattern": re.compile(
-                    r"(?:selenium|puppeteer|playwright|webdriver|chromedriver|"
-                    r"geckodriver|headless.*chrome|phantomjs).*"
-                    r"(?:cookies?|localStorage|sessionStorage|passwords?)",
-                    re.IGNORECASE | re.DOTALL
-                ),
-                "finding_type": FindingType.SUSPICIOUS,
-                "references": ["https://attack.mitre.org/techniques/T1185/"],
-                "cwe_id": "CWE-200",
-            },
-        ])
+        patterns.extend(
+            [
+                {
+                    "id": "BROWSER_AUTOMATION_ABUSE",
+                    "title": "Browser automation tool abuse detected",
+                    "description": "Code uses browser automation tools in suspicious ways that could steal data",
+                    "severity": Severity.MEDIUM,
+                    "pattern": re.compile(
+                        r"(?:selenium|puppeteer|playwright|webdriver|chromedriver|"
+                        r"geckodriver|headless.*chrome|phantomjs).*"
+                        r"(?:cookies?|localStorage|sessionStorage|passwords?)",
+                        re.IGNORECASE | re.DOTALL,
+                    ),
+                    "finding_type": FindingType.SUSPICIOUS,
+                    "references": ["https://attack.mitre.org/techniques/T1185/"],
+                    "cwe_id": "CWE-200",
+                },
+            ]
+        )
 
         return patterns
 
@@ -284,8 +302,10 @@ class BrowserTheftAnalyzer(BaseAnalyzer):
 
                 for match in matches:
                     # Calculate line and column number
-                    line_number = content[:match.start()].count("\n") + 1
-                    column_number = match.start() - content.rfind("\n", 0, match.start())
+                    line_number = content[: match.start()].count("\n") + 1
+                    column_number = match.start() - content.rfind(
+                        "\n", 0, match.start()
+                    )
 
                     # Extract the matched text for context
                     matched_text = match.group(0)
@@ -301,8 +321,8 @@ class BrowserTheftAnalyzer(BaseAnalyzer):
                         severity=pattern_info["severity"],
                         title=pattern_info["title"],
                         description=f"{pattern_info['description']}\n\n"
-                                  f"Matched pattern: {matched_text}\n"
-                                  f"Context: ...{context}...",
+                        f"Matched pattern: {matched_text}\n"
+                        f"Context: ...{context}...",
                         location=Location(
                             path=file_path,
                             line_start=line_number,
@@ -366,5 +386,5 @@ class BrowserTheftAnalyzer(BaseAnalyzer):
 
         return remediation_map.get(
             pattern_id,
-            "Review this code for potential security issues and ensure it follows security best practices."
+            "Review this code for potential security issues and ensure it follows security best practices.",
         )

