@@ -26,17 +26,17 @@ logger = logging.getLogger(__name__)
 
 # Patterns for sensitive information in commit messages
 SENSITIVE_PATTERNS = [
-    r'password\s*[=:]\s*[\w\d_-]+',
-    r'secret\s*[=:]\s*[\w\d_-]+',
-    r'token\s*[=:]\s*[\w\d_-]+',
-    r'key\s*[=:]\s*[\w\d_-]+',
-    r'credential\s*[=:]\s*[\w\d_-]+',
-    r'api[-_]?key\s*[=:]\s*[\w\d_-]+',
+    r"password\s*[=:]\s*[\w\d_-]+",
+    r"secret\s*[=:]\s*[\w\d_-]+",
+    r"token\s*[=:]\s*[\w\d_-]+",
+    r"key\s*[=:]\s*[\w\d_-]+",
+    r"credential\s*[=:]\s*[\w\d_-]+",
+    r"api[-_]?key\s*[=:]\s*[\w\d_-]+",
 ]
 
 # Night time hours (UTC) for detecting suspicious commit times
 NIGHT_START_HOUR = 22  # 10 PM
-NIGHT_END_HOUR = 6     # 6 AM
+NIGHT_END_HOUR = 6  # 6 AM
 
 # Thresholds for suspicious patterns
 LARGE_COMMIT_THRESHOLD = 1000  # files
@@ -49,7 +49,9 @@ class MetadataAnalyzer(BaseAnalyzer):
 
     name = "metadata"
     description = "Analyzes Git repository metadata for suspicious patterns"
-    supported_extensions = {"*"}  # Operates on the repository level, not individual files
+    supported_extensions = {
+        "*"
+    }  # Operates on the repository level, not individual files
 
     def __init__(self, config: Dict[str, Any]) -> None:
         """Initialize the metadata analyzer."""
@@ -74,7 +76,9 @@ class MetadataAnalyzer(BaseAnalyzer):
         self.max_commits = self.analyzer_config.get("max_commits", 100)
 
         # Night time detection (can be customized)
-        self.night_start_hour = self.analyzer_config.get("night_start_hour", NIGHT_START_HOUR)
+        self.night_start_hour = self.analyzer_config.get(
+            "night_start_hour", NIGHT_START_HOUR
+        )
         self.night_end_hour = self.analyzer_config.get("night_end_hour", NIGHT_END_HOUR)
 
         # Git repository handle (initialized when needed)
@@ -202,7 +206,7 @@ class MetadataAnalyzer(BaseAnalyzer):
             findings.append(
                 self._create_error_finding(
                     Path(self.repo.working_dir),
-                    f"Failed to analyze commit history: {str(e)}"
+                    f"Failed to analyze commit history: {str(e)}",
                 )
             )
 
@@ -224,7 +228,11 @@ class MetadataAnalyzer(BaseAnalyzer):
             message = commit.message
 
             for pattern in SENSITIVE_PATTERNS:
-                message_str = message if isinstance(message, str) else message.decode('utf-8', errors='ignore')
+                message_str = (
+                    message
+                    if isinstance(message, str)
+                    else message.decode("utf-8", errors="ignore")
+                )
                 matches = re.finditer(pattern, message_str, re.IGNORECASE)
 
                 for match in matches:
@@ -243,7 +251,11 @@ class MetadataAnalyzer(BaseAnalyzer):
                             severity=Severity.MEDIUM,
                             type=FindingType.SECRET,
                             location=Location(
-                                path=Path(self.repo.working_dir) if self.repo else Path("."),
+                                path=(
+                                    Path(self.repo.working_dir)
+                                    if self.repo
+                                    else Path(".")
+                                ),
                             ),
                             analyzer=self.name,
                             confidence=0.7,
@@ -284,9 +296,14 @@ class MetadataAnalyzer(BaseAnalyzer):
 
             # Logic to handle night hours spanning midnight
             if self.night_start_hour > self.night_end_hour:
-                is_night = commit_time.hour >= self.night_start_hour or commit_time.hour < self.night_end_hour
+                is_night = (
+                    commit_time.hour >= self.night_start_hour
+                    or commit_time.hour < self.night_end_hour
+                )
             else:
-                is_night = self.night_start_hour <= commit_time.hour < self.night_end_hour
+                is_night = (
+                    self.night_start_hour <= commit_time.hour < self.night_end_hour
+                )
 
             if is_night:
                 findings.append(
@@ -301,7 +318,9 @@ class MetadataAnalyzer(BaseAnalyzer):
                         severity=Severity.LOW,
                         type=FindingType.SUSPICIOUS,
                         location=Location(
-                            path=Path(self.repo.working_dir) if self.repo else Path("."),
+                            path=(
+                                Path(self.repo.working_dir) if self.repo else Path(".")
+                            ),
                         ),
                         analyzer=self.name,
                         confidence=0.5,  # Lower confidence as this is somewhat speculative
@@ -310,7 +329,9 @@ class MetadataAnalyzer(BaseAnalyzer):
                             "commit_hash": commit.hexsha,
                             "commit_author": f"{commit.author.name} <{commit.author.email}>",
                             "commit_date": commit.committed_datetime.isoformat(),
-                            "commit_time": commit.committed_datetime.strftime('%H:%M:%S'),
+                            "commit_time": commit.committed_datetime.strftime(
+                                "%H:%M:%S"
+                            ),
                         },
                         remediation=(
                             "Investigate the commit to ensure it was legitimate. "
@@ -359,7 +380,9 @@ class MetadataAnalyzer(BaseAnalyzer):
                         severity=Severity.LOW,
                         type=FindingType.SUSPICIOUS,
                         location=Location(
-                            path=Path(self.repo.working_dir) if self.repo else Path("."),
+                            path=(
+                                Path(self.repo.working_dir) if self.repo else Path(".")
+                            ),
                         ),
                         analyzer=self.name,
                         confidence=0.6,
@@ -429,7 +452,11 @@ class MetadataAnalyzer(BaseAnalyzer):
                             severity=Severity.MEDIUM,
                             type=FindingType.SUSPICIOUS,
                             location=Location(
-                                path=Path(os.path.join(self.repo.working_dir, file_path)) if self.repo else Path(file_path),
+                                path=(
+                                    Path(os.path.join(self.repo.working_dir, file_path))
+                                    if self.repo
+                                    else Path(file_path)
+                                ),
                             ),
                             analyzer=self.name,
                             confidence=0.7,
@@ -507,7 +534,9 @@ class MetadataAnalyzer(BaseAnalyzer):
                         confidence=0.4,  # Lower confidence as this is often legitimate
                         tags=["git", "contributor-analysis"],
                         metadata={
-                            "one_time_contributors": [a[0] for a in one_time_contributors],
+                            "one_time_contributors": [
+                                a[0] for a in one_time_contributors
+                            ],
                             "one_time_commits": one_time_commits,
                             "commit_count": len(commits),
                         },
@@ -522,7 +551,7 @@ class MetadataAnalyzer(BaseAnalyzer):
             findings.append(
                 self._create_error_finding(
                     Path(self.repo.working_dir),
-                    f"Failed to analyze contributors: {str(e)}"
+                    f"Failed to analyze contributors: {str(e)}",
                 )
             )
 
@@ -546,7 +575,13 @@ class MetadataAnalyzer(BaseAnalyzer):
 
             # Check for suspicious branch names
             suspicious_terms = [
-                'backdoor', 'bypass', 'hack', 'malware', 'exploit', 'temp', 'hidden'
+                "backdoor",
+                "bypass",
+                "hack",
+                "malware",
+                "exploit",
+                "temp",
+                "hidden",
             ]
 
             suspicious_branches = []
@@ -593,17 +628,21 @@ class MetadataAnalyzer(BaseAnalyzer):
             for branch in branches:
                 try:
                     # Get the latest commit on the branch
-                    latest_commit = next(self.repo.iter_commits(branch.name, max_count=1))
+                    latest_commit = next(
+                        self.repo.iter_commits(branch.name, max_count=1)
+                    )
                     commit_time = latest_commit.committed_datetime
 
                     # Check if the branch hasn't been updated in over 6 months
                     time_difference = current_time - commit_time.replace(tzinfo=None)
                     if time_difference > timedelta(days=180):
-                        stale_branches.append({
-                            "name": branch.name,
-                            "last_commit": commit_time.isoformat(),
-                            "days_inactive": time_difference.days,
-                        })
+                        stale_branches.append(
+                            {
+                                "name": branch.name,
+                                "last_commit": commit_time.isoformat(),
+                                "days_inactive": time_difference.days,
+                            }
+                        )
                 except (git.GitCommandError, StopIteration):
                     # Skip branches with no commits
                     continue
@@ -640,8 +679,7 @@ class MetadataAnalyzer(BaseAnalyzer):
             logger.error(f"Error analyzing branches: {str(e)}")
             findings.append(
                 self._create_error_finding(
-                    Path(self.repo.working_dir),
-                    f"Failed to analyze branches: {str(e)}"
+                    Path(self.repo.working_dir), f"Failed to analyze branches: {str(e)}"
                 )
             )
 

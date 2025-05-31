@@ -17,4 +17,11 @@ from insect.analysis.python_static_analyzer import PythonStaticAnalyzer
 from insect.analysis.secret_analyzer import SecretAnalyzer
 from insect.analysis.vulnerability_analyzer import VulnerabilityAnalyzer
 
-__all__ = ["PythonStaticAnalyzer", "JavaScriptStaticAnalyzer", "BinaryAnalyzer", "VulnerabilityAnalyzer", "SecretAnalyzer", "ContainerAnalyzer"]
+__all__ = [
+    "PythonStaticAnalyzer",
+    "JavaScriptStaticAnalyzer",
+    "BinaryAnalyzer",
+    "VulnerabilityAnalyzer",
+    "SecretAnalyzer",
+    "ContainerAnalyzer",
+]

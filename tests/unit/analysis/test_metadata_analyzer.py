@@ -28,8 +28,8 @@ class TestMetadataAnalyzer(unittest.TestCase):
 
         # Basic configuration for testing
         self.config = {
-            "analyzers": {"metadata_analyzer": True},
-            "metadata_analyzer": {
+            "analyzers": {"metadata": True},
+            "metadata": {
                 "min_confidence": 0.0,
                 "check_commits": True,
                 "check_contributors": True,
@@ -47,7 +47,7 @@ class TestMetadataAnalyzer(unittest.TestCase):
     def test_init(self):
         """Test analyzer initialization."""
         analyzer = MetadataAnalyzer(self.config)
-        assert analyzer.name == "metadata_analyzer"
+        assert analyzer.name == "metadata"
         assert analyzer.enabled
         assert analyzer.check_commits
         assert analyzer.check_contributors
@@ -143,7 +143,9 @@ class TestMetadataAnalyzer(unittest.TestCase):
         assert findings == []
 
     @patch("insect.analysis.metadata_analyzer.git.Commit")
-    def test_check_commit_message_sensitive_info(self, mock_commit_class):  # noqa: ARG002
+    def test_check_commit_message_sensitive_info(
+        self, mock_commit_class
+    ):  # noqa: ARG002
         """Test detecting sensitive information in commit messages."""
         # Create analyzer
         analyzer = MetadataAnalyzer(self.config)
@@ -176,8 +178,8 @@ class TestMetadataAnalyzer(unittest.TestCase):
         """Test detecting commits made during night hours."""
         # Create analyzer with custom night hours
         config = self.config.copy()
-        config["metadata_analyzer"]["night_start_hour"] = 22  # 10 PM
-        config["metadata_analyzer"]["night_end_hour"] = 6     # 6 AM
+        config["metadata"]["night_start_hour"] = 22  # 10 PM
+        config["metadata"]["night_end_hour"] = 6  # 6 AM
         analyzer = MetadataAnalyzer(config)
         analyzer.repo = MagicMock()
         analyzer.repo.working_dir = str(self.test_repo_dir)
@@ -207,7 +209,7 @@ class TestMetadataAnalyzer(unittest.TestCase):
         """Test detecting unusually large commits."""
         # Create analyzer with custom threshold
         config = self.config.copy()
-        config["metadata_analyzer"]["large_commit_threshold"] = 5  # Small for test
+        config["metadata"]["large_commit_threshold"] = 5  # Small for test
         analyzer = MetadataAnalyzer(config)
         analyzer.repo = MagicMock()
         analyzer.repo.working_dir = str(self.test_repo_dir)
@@ -245,7 +247,7 @@ class TestMetadataAnalyzer(unittest.TestCase):
         """Test detecting large binary files in commits."""
         # Create analyzer with custom threshold
         config = self.config.copy()
-        config["metadata_analyzer"]["large_binary_threshold"] = 100  # Small for test
+        config["metadata"]["large_binary_threshold"] = 100  # Small for test
         analyzer = MetadataAnalyzer(config)
         analyzer.repo = MagicMock()
         analyzer.repo.working_dir = str(self.test_repo_dir)
@@ -344,7 +346,12 @@ class TestMetadataAnalyzer(unittest.TestCase):
         mock_hack_branch.name = "temp-hack"
 
         # Setup repo branches - use a list-like object that supports iteration
-        analyzer.repo.branches = [mock_normal_branch, mock_feature_branch, mock_suspicious_branch, mock_hack_branch]
+        analyzer.repo.branches = [
+            mock_normal_branch,
+            mock_feature_branch,
+            mock_suspicious_branch,
+            mock_hack_branch,
+        ]
 
         # Skip stale branch check for simplicity
         with patch.object(analyzer.repo, "iter_commits", side_effect=Exception("Skip")):

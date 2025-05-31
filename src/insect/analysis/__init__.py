@@ -128,7 +128,7 @@ def create_analyzer_instance(
 
 
 # Import analyzers to register them - these imports are needed for side effects
-from . import (  # noqa: E402
+from . import (  # noqa: E402, I001
     binary_analyzer,  # noqa: F401
     container_analyzer,  # noqa: F401
     javascript_static_analyzer,  # noqa: F401

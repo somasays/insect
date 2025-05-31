@@ -169,7 +169,9 @@ def create_analyzers(
     return analyzers
 
 
-def find_analyzers_for_file(file_path: Path, analyzers: List[BaseAnalyzer]) -> List[BaseAnalyzer]:
+def find_analyzers_for_file(
+    file_path: Path, analyzers: List[BaseAnalyzer]
+) -> List[BaseAnalyzer]:
     """Find analyzers that can analyze a specific file.
 
     Args:
@@ -189,9 +191,7 @@ def find_analyzers_for_file(file_path: Path, analyzers: List[BaseAnalyzer]) -> L
 
 
 def analyze_file(
-    file_path: Path,
-    analyzers: List[BaseAnalyzer],
-    scan_cache=None
+    file_path: Path, analyzers: List[BaseAnalyzer], scan_cache=None
 ) -> List[Finding]:
     """Analyze a file with all applicable analyzers.
 
@@ -224,10 +224,16 @@ def analyze_file(
                 continue
 
             # Check if we have cached results for this file and analyzer
-            if scan_cache is not None and scan_cache.is_file_cached(file_path, analyzer.name):
-                cached_findings = scan_cache.get_cached_findings(file_path, analyzer.name)
+            if scan_cache is not None and scan_cache.is_file_cached(
+                file_path, analyzer.name
+            ):
+                cached_findings = scan_cache.get_cached_findings(
+                    file_path, analyzer.name
+                )
                 if cached_findings:
-                    logger.debug(f"Using cached results for {file_path} with {analyzer.name}")
+                    logger.debug(
+                        f"Using cached results for {file_path} with {analyzer.name}"
+                    )
                     findings.extend(cached_findings)
                     continue
 
@@ -260,10 +266,7 @@ def analyze_file(
     return findings
 
 
-def filter_findings(
-    findings: List[Finding],
-    config: Dict[str, Any]
-) -> List[Finding]:
+def filter_findings(findings: List[Finding], config: Dict[str, Any]) -> List[Finding]:
     """Filter findings based on configuration.
 
     Args:
@@ -332,9 +335,7 @@ def create_scan_metadata(
     extension_stats = get_file_extension_stats(files)
 
     # Calculate severity counts
-    severity_counts = {
-        severity.name: 0 for severity in Severity
-    }
+    severity_counts = {severity.name: 0 for severity in Severity}
     for finding in findings:
         severity_counts[finding.severity.name] += 1
 
@@ -352,22 +353,22 @@ def create_scan_metadata(
     # List of unique tags across all findings
     all_tags = set()
     for finding in findings:
-        if hasattr(finding, 'tags') and finding.tags:
+        if hasattr(finding, "tags") and finding.tags:
             all_tags.update(finding.tags)
 
     # Identify file extensions with most findings
     extension_findings: Dict[str, int] = {}
     for finding in findings:
-        if hasattr(finding, 'location') and finding.location.path:
+        if hasattr(finding, "location") and finding.location.path:
             ext = finding.location.path.suffix.lower()
             extension_findings[ext] = extension_findings.get(ext, 0) + 1
 
     # Sort extensions by number of findings
     top_extensions_by_findings = sorted(
-        extension_findings.items(),
-        key=lambda x: x[1],
-        reverse=True
-    )[:5]  # Top 5
+        extension_findings.items(), key=lambda x: x[1], reverse=True
+    )[
+        :5
+    ]  # Top 5
 
     # Create the metadata dictionary
     metadata = {
@@ -389,7 +390,7 @@ def create_scan_metadata(
             "min_severity": config.get("severity", {}).get("min_level", "LOW"),
             "include_patterns": config.get("patterns", {}).get("include", ["*"]),
             "exclude_patterns": config.get("patterns", {}).get("exclude", []),
-        }
+        },
     }
 
     return metadata
@@ -486,9 +487,13 @@ def scan_repository(
                 all_findings.extend(repo_findings)
 
                 if repo_findings:
-                    logger.info(f"Found {len(repo_findings)} issues with {analyzer.name}")
+                    logger.info(
+                        f"Found {len(repo_findings)} issues with {analyzer.name}"
+                    )
             except Exception as e:
-                logger.error(f"Error in repository-level analyzer {analyzer.name}: {str(e)}")
+                logger.error(
+                    f"Error in repository-level analyzer {analyzer.name}: {str(e)}"
+                )
 
     # Track scanning progress
     total_files = sum(len(file_list) for file_list in analyzer_file_map.values())
@@ -513,21 +518,28 @@ def scan_repository(
         get_dependencies_status,
         install_missing_dependencies,
     )
+
     dependencies = get_dependencies_status()
-    missing_dependencies = [name for name, status in dependencies.items()
-                          if status["status"] != "available"]
+    missing_dependencies = [
+        name for name, status in dependencies.items() if status["status"] != "available"
+    ]
 
     # Try to auto-install dependencies if option is set
     if missing_dependencies and config.get("install_deps", False):
-        logger.info(f"Auto-installing missing dependencies: {', '.join(missing_dependencies)}")
+        logger.info(
+            f"Auto-installing missing dependencies: {', '.join(missing_dependencies)}"
+        )
 
         # Install missing dependencies
         results = install_missing_dependencies()
 
         # Recalculate missing dependencies after installation
         dependencies = get_dependencies_status()
-        missing_dependencies = [name for name, status in dependencies.items()
-                              if status["status"] != "available"]
+        missing_dependencies = [
+            name
+            for name, status in dependencies.items()
+            if status["status"] != "available"
+        ]
 
         # Summarize installation results
         total_deps = len(results)
@@ -594,16 +606,24 @@ def scan_repository(
                     progress_percentage = (processed_files * 100) // total_files
                     if progress_percentage >= last_progress_log + 10:
                         last_progress_log = (progress_percentage // 10) * 10
-                        logger.info(f"Scan progress: {progress_percentage}% ({processed_files}/{total_files})")
+                        logger.info(
+                            f"Scan progress: {progress_percentage}% ({processed_files}/{total_files})"
+                        )
 
                 # Detailed logging on every 100th file or if findings were found
                 if i > 0 and i % 100 == 0:
-                    logger.debug(f"Scanned {i}/{len(analyzer_files)} files with {analyzer.name}...")
+                    logger.debug(
+                        f"Scanned {i}/{len(analyzer_files)} files with {analyzer.name}..."
+                    )
 
                 if findings:
-                    logger.debug(f"Found {len(findings)} issues in {file_path} with {analyzer.name}")
+                    logger.debug(
+                        f"Found {len(findings)} issues in {file_path} with {analyzer.name}"
+                    )
             except Exception as e:
-                logger.error(f"Error analyzing {file_path} with {analyzer.name}: {str(e)}")
+                logger.error(
+                    f"Error analyzing {file_path} with {analyzer.name}: {str(e)}"
+                )
 
     # Finish progress bar if it was started
     if progress_bar and progress_bar._start_time:
@@ -630,7 +650,9 @@ def scan_repository(
 
     # Filter findings based on configuration
     filtered_findings = filter_findings(all_findings, config)
-    logger.info(f"Filtered {len(all_findings) - len(filtered_findings)} findings based on configuration")
+    logger.info(
+        f"Filtered {len(all_findings) - len(filtered_findings)} findings based on configuration"
+    )
 
     # Create scan metadata
     metadata = create_scan_metadata(
@@ -642,7 +664,11 @@ def scan_repository(
         metadata["cache_stats"] = scan_cache.get_cache_stats()
 
     # Calculate time-related metrics
-    files_per_second = len(files) / metadata["duration_seconds"] if metadata["duration_seconds"] > 0 else 0
+    files_per_second = (
+        len(files) / metadata["duration_seconds"]
+        if metadata["duration_seconds"] > 0
+        else 0
+    )
     findings_per_file = len(filtered_findings) / len(files) if len(files) > 0 else 0
 
     logger.info(

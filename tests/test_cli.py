@@ -15,10 +15,20 @@ def test_parse_args() -> None:
 
 def test_main_exit_code() -> None:
     """Test that main returns the correct exit code."""
-    with patch("insect.cli.parse_args") as mock_parse_args, \
-         patch("insect.core.scan_repository") as mock_scan_repository:
+    with patch("insect.cli.parse_args") as mock_parse_args, patch(
+        "insect.core.scan_repository"
+    ) as mock_scan_repository:
         # Set up mock return values
-        mock_scan_repository.return_value = ([], {"duration_seconds": 1.0, "repository": "/path/to/repo", "file_count": 0, "finding_count": 0, "severity_counts": {"critical": 0, "high": 0, "medium": 0, "low": 0}})
+        mock_scan_repository.return_value = (
+            [],
+            {
+                "duration_seconds": 1.0,
+                "repository": "/path/to/repo",
+                "file_count": 0,
+                "finding_count": 0,
+                "severity_counts": {"critical": 0, "high": 0, "medium": 0, "low": 0},
+            },
+        )
 
         mock_parse_args.return_value = type(
             "obj",
@@ -36,6 +46,10 @@ def test_main_exit_code() -> None:
                 "disable": None,
                 "max_depth": None,
                 "no_secrets": False,
+                "no_cache": False,
+                "clear_cache": False,
+                "no_progress": False,
+                "install_deps": False,
             },
         )
         result = main(["scan", "/path/to/repo"])

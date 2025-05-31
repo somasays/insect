@@ -63,6 +63,7 @@ def check_tool_availability(
     # For backward compatibility, return the same simple boolean result plus installation instructions
     if status == DependencyStatus.NOT_FOUND:
         from insect.analysis.dependency_manager import DEPENDENCIES
+
         if tool_name in DEPENDENCIES:
             install_instructions = DEPENDENCIES[tool_name].get_install_instructions()
             return False, install_instructions

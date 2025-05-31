@@ -22,10 +22,7 @@ def test_check_docker_available():
         mock_run.return_value = mock.MagicMock(returncode=0)
         assert check_docker_available() is True
         mock_run.assert_called_once_with(
-            ["docker", "--version"],
-            capture_output=True,
-            text=True,
-            check=False
+            ["docker", "--version"], capture_output=True, text=True, check=False
         )
 
     # Mock failure case
@@ -41,9 +38,9 @@ def test_check_docker_available():
 def test_build_insect_image():
     """Test building Docker image for Insect."""
     # Mock successful case
-    with mock.patch("tempfile.TemporaryDirectory") as mock_tempdir, \
-         mock.patch("subprocess.run") as mock_run, \
-         mock.patch("pathlib.Path.write_text"):
+    with mock.patch("tempfile.TemporaryDirectory") as mock_tempdir, mock.patch(
+        "subprocess.run"
+    ) as mock_run, mock.patch("pathlib.Path.write_text"):
 
         # Setup mocks
         mock_tempdir.return_value.__enter__.return_value = "/tmp/test"
@@ -62,13 +59,15 @@ def test_build_insect_image():
         assert docker_build_cmd[0:2] == ["docker", "build"]
 
     # Mock failure case
-    with mock.patch("tempfile.TemporaryDirectory") as mock_tempdir, \
-         mock.patch("subprocess.run") as mock_run, \
-         mock.patch("pathlib.Path.write_text"):
+    with mock.patch("tempfile.TemporaryDirectory") as mock_tempdir, mock.patch(
+        "subprocess.run"
+    ) as mock_run, mock.patch("pathlib.Path.write_text"):
 
         # Setup mocks
         mock_tempdir.return_value.__enter__.return_value = "/tmp/test"
-        mock_run.side_effect = subprocess.CalledProcessError(1, "docker build", stderr="Build failed")
+        mock_run.side_effect = subprocess.CalledProcessError(
+            1, "docker build", stderr="Build failed"
+        )
 
         # Call function
         success, error = build_insect_image()
@@ -94,29 +93,19 @@ def test_run_scan_in_container(mock_build, mock_run):
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create mock scan results
         scan_results = {
-            "scan_metadata": {
-                "file_count": 42,
-                "finding_count": 2
-            },
+            "scan_metadata": {"file_count": 42, "finding_count": 2},
             "findings": [
-                {
-                    "id": "TEST-1",
-                    "title": "Test finding 1",
-                    "severity": "high"
-                },
-                {
-                    "id": "TEST-2",
-                    "title": "Test finding 2",
-                    "severity": "medium"
-                }
-            ]
+                {"id": "TEST-1", "title": "Test finding 1", "severity": "high"},
+                {"id": "TEST-2", "title": "Test finding 2", "severity": "medium"},
+            ],
         }
 
         # Write mock scan results and commit hash
         results_path = Path(temp_dir) / "scan_results.json"
-        commit_path = Path(temp_dir) / "commit_hash.txt"
+        commit_path = Path(temp_dir) / "commit.txt"
 
         with open(results_path, "w") as f:
+            f.write("Repository to scan: /app\n")  # Expected prefix line
             json.dump(scan_results, f)
 
         with open(commit_path, "w") as f:
@@ -128,8 +117,7 @@ def test_run_scan_in_container(mock_build, mock_run):
 
             # Call function
             success, results, commit = run_scan_in_container(
-                repo_url="https://github.com/example/repo",
-                branch="main"
+                repo_url="https://github.com/example/repo", branch="main"
             )
 
             # Verify success
@@ -137,9 +125,9 @@ def test_run_scan_in_container(mock_build, mock_run):
             assert results == scan_results
             assert commit == "abcdef1234567890"
 
-            # Verify Docker run command
-            mock_run.assert_called_once()
-            docker_run_cmd = mock_run.call_args[0][0]
+            # Verify Docker run command was called (should be second call after image inspect)
+            assert mock_run.call_count == 2
+            docker_run_cmd = mock_run.call_args_list[1][0][0]  # Get second call args
             assert docker_run_cmd[0:2] == ["docker", "run"]
 
             # Test with custom arguments
@@ -150,7 +138,7 @@ def test_run_scan_in_container(mock_build, mock_run):
                 branch="main",
                 commit="1234567890abcdef",
                 scan_args=["--no-cache", "--severity", "high"],
-                image_name="custom-insect:latest"
+                image_name="custom-insect:latest",
             )
 
             # Verify custom args were passed
@@ -169,7 +157,7 @@ def test_clone_repository(mock_run):
     success = clone_repository(
         repo_url="https://github.com/example/repo",
         target_path=Path("/tmp/repo"),
-        commit_hash="abcdef1234567890"
+        commit_hash="abcdef1234567890",
     )
 
     assert success is True
@@ -177,12 +165,14 @@ def test_clone_repository(mock_run):
 
     # Mock failure
     mock_run.reset_mock()
-    mock_run.side_effect = subprocess.CalledProcessError(1, "git clone", stderr="Clone failed")
+    mock_run.side_effect = subprocess.CalledProcessError(
+        1, "git clone", stderr="Clone failed"
+    )
 
     success = clone_repository(
         repo_url="https://github.com/example/repo",
         target_path=Path("/tmp/repo"),
-        commit_hash="abcdef1234567890"
+        commit_hash="abcdef1234567890",
     )
 
     assert success is False

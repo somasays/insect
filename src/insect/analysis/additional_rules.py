@@ -48,7 +48,7 @@ ADDITIONAL_PYTHON_RULES: List[StaticDetectionRule] = [
         remediation="Use safe APIs like subprocess with argument lists and avoid shell=True.",
         references=[
             "https://owasp.org/www-community/attacks/Command_Injection",
-            "https://cwe.mitre.org/data/definitions/77.html"
+            "https://cwe.mitre.org/data/definitions/77.html",
         ],
         cwe_id="CWE-77",
         cvss_score=9.5,
@@ -69,7 +69,7 @@ ADDITIONAL_PYTHON_RULES: List[StaticDetectionRule] = [
         remediation="Investigate code accessing container runtime or orchestration systems.",
         references=[
             "https://attack.mitre.org/techniques/T1611/",
-            "https://cwe.mitre.org/data/definitions/1008.html"
+            "https://cwe.mitre.org/data/definitions/1008.html",
         ],
         cwe_id="CWE-1008",
         cvss_score=9.0,
@@ -90,7 +90,7 @@ ADDITIONAL_PYTHON_RULES: List[StaticDetectionRule] = [
         remediation="Use parameterized queries or ORM instead of string concatenation.",
         references=[
             "https://owasp.org/www-community/attacks/SQL_Injection",
-            "https://cwe.mitre.org/data/definitions/89.html"
+            "https://cwe.mitre.org/data/definitions/89.html",
         ],
         cwe_id="CWE-89",
         cvss_score=8.5,
@@ -111,7 +111,7 @@ ADDITIONAL_PYTHON_RULES: List[StaticDetectionRule] = [
         remediation="Use safe template APIs and avoid passing user input directly to templates.",
         references=[
             "https://portswigger.net/research/server-side-template-injection",
-            "https://cwe.mitre.org/data/definitions/94.html"
+            "https://cwe.mitre.org/data/definitions/94.html",
         ],
         cwe_id="CWE-94",
         cvss_score=8.0,
@@ -131,7 +131,7 @@ ADDITIONAL_PYTHON_RULES: List[StaticDetectionRule] = [
         remediation="Use safer alternatives like json.loads() or yaml.safe_load().",
         references=[
             "https://owasp.org/www-project-top-ten/2017/A8_2017-Insecure_Deserialization",
-            "https://cwe.mitre.org/data/definitions/502.html"
+            "https://cwe.mitre.org/data/definitions/502.html",
         ],
         cwe_id="CWE-502",
         cvss_score=8.5,
@@ -158,7 +158,7 @@ ADDITIONAL_PYTHON_RULES: List[StaticDetectionRule] = [
         remediation="Investigate code accessing package management systems.",
         references=[
             "https://attack.mitre.org/techniques/T1195/",
-            "https://cwe.mitre.org/data/definitions/1104.html"
+            "https://cwe.mitre.org/data/definitions/1104.html",
         ],
         cwe_id="CWE-1104",
         cvss_score=9.6,
@@ -178,7 +178,7 @@ ADDITIONAL_PYTHON_RULES: List[StaticDetectionRule] = [
         remediation="Store sensitive information in environment variables or secure vaults.",
         references=[
             "https://owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure",
-            "https://cwe.mitre.org/data/definitions/200.html"
+            "https://cwe.mitre.org/data/definitions/200.html",
         ],
         cwe_id="CWE-200",
         cvss_score=7.5,
@@ -202,7 +202,7 @@ ADDITIONAL_JAVASCRIPT_RULES: List[StaticDetectionRule] = [
         remediation="Use proper output encoding/escaping with client-side routing.",
         references=[
             "https://owasp.org/www-community/attacks/xss/",
-            "https://cwe.mitre.org/data/definitions/79.html"
+            "https://cwe.mitre.org/data/definitions/79.html",
         ],
         cwe_id="CWE-79",
         cvss_score=8.0,
@@ -222,7 +222,7 @@ ADDITIONAL_JAVASCRIPT_RULES: List[StaticDetectionRule] = [
         remediation="Use Object.create(null) and avoid recursive merging of untrusted data.",
         references=[
             "https://github.com/OWASP/API-Security/blob/master/editions/2023/en/0xa8-security-misconfiguration.md",
-            "https://cwe.mitre.org/data/definitions/1321.html"
+            "https://cwe.mitre.org/data/definitions/1321.html",
         ],
         cwe_id="CWE-1321",
         cvss_score=7.5,
@@ -242,7 +242,7 @@ ADDITIONAL_JAVASCRIPT_RULES: List[StaticDetectionRule] = [
         remediation="Use fixed import paths and avoid dynamic imports with user input.",
         references=[
             "https://owasp.org/www-project-top-ten/2017/A9_2017-Using_Components_with_Known_Vulnerabilities",
-            "https://cwe.mitre.org/data/definitions/829.html"
+            "https://cwe.mitre.org/data/definitions/829.html",
         ],
         cwe_id="CWE-829",
         cvss_score=7.0,
@@ -262,7 +262,7 @@ ADDITIONAL_JAVASCRIPT_RULES: List[StaticDetectionRule] = [
         remediation="Implement URL validation and use allowlists for external resources.",
         references=[
             "https://owasp.org/www-community/attacks/Server_Side_Request_Forgery",
-            "https://cwe.mitre.org/data/definitions/918.html"
+            "https://cwe.mitre.org/data/definitions/918.html",
         ],
         cwe_id="CWE-918",
         cvss_score=8.0,
@@ -282,7 +282,7 @@ ADDITIONAL_JAVASCRIPT_RULES: List[StaticDetectionRule] = [
         remediation="Always verify JWT signatures and check expiration times.",
         references=[
             "https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/",
-            "https://cwe.mitre.org/data/definitions/347.html"
+            "https://cwe.mitre.org/data/definitions/347.html",
         ],
         cwe_id="CWE-347",
         cvss_score=8.0,
@@ -302,7 +302,7 @@ ADDITIONAL_JAVASCRIPT_RULES: List[StaticDetectionRule] = [
         remediation="Avoid storing sensitive data in client-side storage.",
         references=[
             "https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html",
-            "https://cwe.mitre.org/data/definitions/312.html"
+            "https://cwe.mitre.org/data/definitions/312.html",
         ],
         cwe_id="CWE-312",
         cvss_score=6.0,
@@ -339,7 +339,10 @@ ADDITIONAL_SHELL_PATTERNS = [
             r"(npm|pip|gem|go)\s+.*?--registry\s+.*?"
         ),
         "Avoid dynamically determined package sources and use trusted repositories.",
-        ["https://attack.mitre.org/techniques/T1195/", "https://cwe.mitre.org/data/definitions/1104.html"],
+        [
+            "https://attack.mitre.org/techniques/T1195/",
+            "https://cwe.mitre.org/data/definitions/1104.html",
+        ],
         "CWE-1104",
         9.0,
     ),

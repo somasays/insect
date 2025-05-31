@@ -20,7 +20,7 @@ class TestContainerAnalyzer:
                 "check_base_images": True,
                 "check_secrets": True,
                 "check_privileges": True,
-                "check_networking": True
+                "check_networking": True,
             }
         }
         return ContainerAnalyzer(config)
@@ -33,7 +33,7 @@ class TestContainerAnalyzer:
             ("Dockerfile.prod", True),
             ("app.dockerfile", True),
             ("docker-compose.yml", False),
-            ("regular.txt", False)
+            ("regular.txt", False),
         ]
 
         for filename, expected in test_cases:
@@ -48,7 +48,7 @@ class TestContainerAnalyzer:
             ("compose.yml", True),
             ("docker-compose.prod.yml", True),
             ("Dockerfile", False),
-            ("regular.yml", False)
+            ("regular.yml", False),
         ]
 
         for filename, expected in test_cases:
@@ -65,7 +65,9 @@ COPY app.py /app/
 CMD ["python", "/app/app.py"]
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='Dockerfile', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="Dockerfile", delete=False
+        ) as f:
             f.write(dockerfile_content)
             f.flush()
 
@@ -86,14 +88,18 @@ ENV APP_NAME=myapp
 CMD ["python", "app.py"]
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='Dockerfile', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="Dockerfile", delete=False
+        ) as f:
             f.write(dockerfile_content)
             f.flush()
 
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find secrets in environment variables
-            secret_findings = [f for f in findings if "secrets in environment" in f.title.lower()]
+            secret_findings = [
+                f for f in findings if "secrets in environment" in f.title.lower()
+            ]
             assert len(secret_findings) >= 1
 
     def test_dockerfile_vulnerable_base_image(self, analyzer):
@@ -105,14 +111,18 @@ COPY app.py /app/
 CMD ["python", "/app/app.py"]
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='Dockerfile', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="Dockerfile", delete=False
+        ) as f:
             f.write(dockerfile_content)
             f.flush()
 
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find vulnerable base image
-            base_image_findings = [f for f in findings if "vulnerable base image" in f.title.lower()]
+            base_image_findings = [
+                f for f in findings if "vulnerable base image" in f.title.lower()
+            ]
             assert len(base_image_findings) >= 1
             assert "ubuntu:14.04" in base_image_findings[0].description
 
@@ -126,14 +136,18 @@ EXPOSE 8080
 CMD ["python", "/app/app.py"]
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='Dockerfile', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="Dockerfile", delete=False
+        ) as f:
             f.write(dockerfile_content)
             f.flush()
 
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find missing health check
-            healthcheck_findings = [f for f in findings if "health check" in f.title.lower()]
+            healthcheck_findings = [
+                f for f in findings if "health check" in f.title.lower()
+            ]
             assert len(healthcheck_findings) >= 1
 
     def test_dockerfile_with_healthcheck(self, analyzer):
@@ -147,14 +161,18 @@ HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost:8080/health
 CMD ["python", "/app/app.py"]
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='Dockerfile', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="Dockerfile", delete=False
+        ) as f:
             f.write(dockerfile_content)
             f.flush()
 
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should not find missing health check
-            healthcheck_findings = [f for f in findings if "missing health check" in f.title.lower()]
+            healthcheck_findings = [
+                f for f in findings if "missing health check" in f.title.lower()
+            ]
             assert len(healthcheck_findings) == 0
 
     def test_dockerfile_unnecessary_packages(self, analyzer):
@@ -166,14 +184,18 @@ COPY app.py /app/
 CMD ["python", "/app/app.py"]
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='Dockerfile', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="Dockerfile", delete=False
+        ) as f:
             f.write(dockerfile_content)
             f.flush()
 
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find unnecessary packages
-            package_findings = [f for f in findings if "unnecessary packages" in f.title.lower()]
+            package_findings = [
+                f for f in findings if "unnecessary packages" in f.title.lower()
+            ]
             assert len(package_findings) >= 1
 
     def test_dockerfile_sensitive_file_copy(self, analyzer):
@@ -186,14 +208,18 @@ COPY app.py /app/
 CMD ["python", "/app/app.py"]
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='Dockerfile', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="Dockerfile", delete=False
+        ) as f:
             f.write(dockerfile_content)
             f.flush()
 
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find sensitive file copying
-            sensitive_findings = [f for f in findings if "sensitive files" in f.title.lower()]
+            sensitive_findings = [
+                f for f in findings if "sensitive files" in f.title.lower()
+            ]
             assert len(sensitive_findings) >= 1
 
     def test_docker_compose_privileged_container(self, analyzer):
@@ -212,14 +238,18 @@ services:
       - "8080:8080"
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='docker-compose.yml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="docker-compose.yml", delete=False
+        ) as f:
             f.write(compose_content)
             f.flush()
 
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find privileged container
-            privileged_findings = [f for f in findings if "privileged" in f.title.lower()]
+            privileged_findings = [
+                f for f in findings if "privileged" in f.title.lower()
+            ]
             assert len(privileged_findings) >= 1
             assert "app" in privileged_findings[0].description
 
@@ -235,14 +265,18 @@ services:
       - "80:80"
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='docker-compose.yml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="docker-compose.yml", delete=False
+        ) as f:
             f.write(compose_content)
             f.flush()
 
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find host network usage
-            network_findings = [f for f in findings if "host network" in f.title.lower()]
+            network_findings = [
+                f for f in findings if "host network" in f.title.lower()
+            ]
             assert len(network_findings) >= 1
 
     def test_docker_compose_dangerous_volume_mounts(self, analyzer):
@@ -258,7 +292,9 @@ services:
       - ./app:/app
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='docker-compose.yml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="docker-compose.yml", delete=False
+        ) as f:
             f.write(compose_content)
             f.flush()
 
@@ -286,14 +322,18 @@ services:
       NGINX_PORT: 80
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='docker-compose.yml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="docker-compose.yml", delete=False
+        ) as f:
             f.write(compose_content)
             f.flush()
 
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find secrets in environment variables
-            secret_findings = [f for f in findings if "secrets in environment" in f.title.lower()]
+            secret_findings = [
+                f for f in findings if "secrets in environment" in f.title.lower()
+            ]
             assert len(secret_findings) >= 1
 
     def test_kubernetes_privileged_container(self, analyzer):
@@ -313,14 +353,16 @@ spec:
     image: sidecar:latest
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(k8s_content)
             f.flush()
 
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find privileged container
-            privileged_findings = [f for f in findings if "privileged" in f.title.lower()]
+            privileged_findings = [
+                f for f in findings if "privileged" in f.title.lower()
+            ]
             assert len(privileged_findings) >= 1
             assert "app" in privileged_findings[0].description
 
@@ -339,7 +381,7 @@ spec:
     image: myapp:latest
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(k8s_content)
             f.flush()
 
@@ -362,14 +404,16 @@ spec:
     image: myapp:latest
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(k8s_content)
             f.flush()
 
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find missing security context
-            security_findings = [f for f in findings if "security context" in f.title.lower()]
+            security_findings = [
+                f for f in findings if "security context" in f.title.lower()
+            ]
             assert len(security_findings) >= 1
 
     def test_kubernetes_missing_resource_limits(self, analyzer):
@@ -396,14 +440,16 @@ spec:
             memory: "128Mi"
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(k8s_content)
             f.flush()
 
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find missing resource limits
-            resource_findings = [f for f in findings if "resource limits" in f.title.lower()]
+            resource_findings = [
+                f for f in findings if "resource limits" in f.title.lower()
+            ]
             assert len(resource_findings) >= 1
 
     def test_kubernetes_with_proper_security(self, analyzer):
@@ -433,14 +479,16 @@ spec:
         cpu: "250m"
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(k8s_content)
             f.flush()
 
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should have minimal findings (properly secured)
-            high_severity_findings = [f for f in findings if f.severity == Severity.HIGH]
+            high_severity_findings = [
+                f for f in findings if f.severity == Severity.HIGH
+            ]
             assert len(high_severity_findings) == 0
 
     def test_invalid_yaml_handling(self, analyzer):
@@ -456,7 +504,9 @@ services:
       - INVALID_YAML: [unclosed bracket
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='docker-compose.yml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="docker-compose.yml", delete=False
+        ) as f:
             f.write(invalid_yaml)
             f.flush()
 
@@ -487,7 +537,7 @@ services:
                 "check_base_images": False,
                 "check_secrets": False,
                 "check_privileges": True,
-                "check_networking": True
+                "check_networking": True,
             }
         }
         analyzer_minimal = ContainerAnalyzer(config_minimal)
@@ -498,7 +548,9 @@ ENV DATABASE_PASSWORD=secret123
 USER root
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='Dockerfile', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="Dockerfile", delete=False
+        ) as f:
             f.write(dockerfile_content)
             f.flush()
 
@@ -522,7 +574,9 @@ ENV password=mysecretpassword123
 RUN echo "secret=abcdef123456789" > /app/config
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='Dockerfile', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="Dockerfile", delete=False
+        ) as f:
             f.write(dockerfile_content)
             f.flush()
 
@@ -541,12 +595,16 @@ RUN chown root:root /app
 RUN sudo apt-get update
         """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='Dockerfile', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="Dockerfile", delete=False
+        ) as f:
             f.write(dockerfile_content)
             f.flush()
 
             findings = analyzer.analyze_file(Path(f.name))
 
             # Should find privileged operations
-            privilege_findings = [f for f in findings if "privileged operation" in f.title.lower()]
+            privilege_findings = [
+                f for f in findings if "privileged operation" in f.title.lower()
+            ]
             assert len(privilege_findings) >= 1

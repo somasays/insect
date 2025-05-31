@@ -26,8 +26,11 @@ def test_config() -> Dict[str, Any]:
 def analyzer(test_config: Dict[str, Any]) -> ShellScriptAnalyzer:
     """Initialize the analyzer with the test configuration."""
     with patch(
-        "insect.analysis.shell.analyzer.ShellScriptAnalyzer._check_shellcheck_availability",
-        return_value=False,  # Make sure shellcheck is considered not available
+        "insect.analysis.static_analyzer_utils.check_tool_availability",
+        return_value=(
+            False,
+            "ShellCheck not available for testing",
+        ),  # Make sure shellcheck is considered not available
     ):
         return ShellScriptAnalyzer(test_config)
 
@@ -163,7 +166,8 @@ def test_dangerous_command_execution(
 
     assert len(findings) >= 4
     assert any(
-        "dangerous" in finding.title.lower() or "command execution" in finding.description.lower()
+        "dangerous" in finding.title.lower()
+        or "command execution" in finding.description.lower()
         for finding in findings
     )
 
@@ -202,7 +206,8 @@ def test_suspicious_network_activity(
 
     assert len(findings) >= 2
     assert any(
-        "network" in finding.title.lower() or "connection" in finding.description.lower()
+        "network" in finding.title.lower()
+        or "connection" in finding.description.lower()
         for finding in findings
     )
 
@@ -238,7 +243,8 @@ def test_privilege_escalation_detection(
 
     assert len(findings) >= 4
     assert any(
-        "privilege" in finding.title.lower() or "escalation" in finding.description.lower()
+        "privilege" in finding.title.lower()
+        or "escalation" in finding.description.lower()
         for finding in findings
     )
 
@@ -274,7 +280,8 @@ def test_sensitive_file_operations(
 
     assert len(findings) >= 4
     assert any(
-        "sensitive file" in finding.title.lower() or "file operation" in finding.title.lower()
+        "sensitive file" in finding.title.lower()
+        or "file operation" in finding.title.lower()
         for finding in findings
     )
 
@@ -311,7 +318,8 @@ def test_environment_variable_manipulation(
 
     assert len(findings) >= 4
     assert any(
-        "environment variable" in finding.title.lower() or "manipulation" in finding.title.lower()
+        "environment variable" in finding.title.lower()
+        or "manipulation" in finding.title.lower()
         for finding in findings
     )
 
@@ -379,7 +387,9 @@ def test_analyze_empty_file(
     os.remove(file_path)
 
 
-def test_shellcheck_integration(test_config: Dict[str, Any], test_files_dir: Path) -> None:
+def test_shellcheck_integration(
+    test_config: Dict[str, Any], test_files_dir: Path
+) -> None:
     """Test integration with ShellCheck."""
     # Only run this test if shellcheck is available
     shellcheck_available = os.system("which shellcheck > /dev/null 2>&1") == 0
@@ -414,15 +424,15 @@ def test_shellcheck_integration(test_config: Dict[str, Any], test_files_dir: Pat
     findings = analyzer.analyze_file(file_path)
 
     assert len(findings) > 0
-    assert any(
-        "shellcheck" in finding.id.lower() for finding in findings
-    )
+    assert any("shellcheck" in finding.id.lower() for finding in findings)
 
     # Clean up
     os.remove(file_path)
 
 
-def test_confidence_threshold(test_config: Dict[str, Any], test_files_dir: Path) -> None:
+def test_confidence_threshold(
+    test_config: Dict[str, Any], test_files_dir: Path
+) -> None:
     """Test that the confidence threshold works."""
     # This test is mainly focused on checking that the min_confidence parameter is properly applied
 
@@ -441,8 +451,8 @@ def test_confidence_threshold(test_config: Dict[str, Any], test_files_dir: Path)
     # Get analyzer with min_confidence = 0.0
     test_config["shell_script_analyzer"]["min_confidence"] = 0.0
     with patch(
-        "insect.analysis.shell.analyzer.ShellScriptAnalyzer._check_shellcheck_availability",
-        return_value=False,
+        "insect.analysis.static_analyzer_utils.check_tool_availability",
+        return_value=(False, "ShellCheck not available for testing"),
     ):
         analyzer = ShellScriptAnalyzer(test_config)
 
@@ -452,8 +462,8 @@ def test_confidence_threshold(test_config: Dict[str, Any], test_files_dir: Path)
     # For a different high threshold, it should also be set correctly
     test_config["shell_script_analyzer"]["min_confidence"] = 0.9
     with patch(
-        "insect.analysis.shell.analyzer.ShellScriptAnalyzer._check_shellcheck_availability",
-        return_value=False,
+        "insect.analysis.static_analyzer_utils.check_tool_availability",
+        return_value=(False, "ShellCheck not available for testing"),
     ):
         high_analyzer = ShellScriptAnalyzer(test_config)
 

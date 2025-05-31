@@ -8,10 +8,9 @@ import uuid
 from pathlib import Path
 from unittest.mock import patch
 
-from insect.utils import (
+from insect.utils import (  # Hash utilities; File utilities
     SECRET_PATTERNS,
     calculate_entropy,
-    # Hash utilities
     calculate_file_hash,
     calculate_string_hash,
     extract_snippet,
@@ -20,7 +19,6 @@ from insect.utils import (
     generate_uuid,
     get_file_extension_stats,
     get_lines_of_interest,
-    # File utilities
     is_binary_file,
     normalize_path_for_hashing,
     read_file_safely,

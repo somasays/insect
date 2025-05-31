@@ -276,7 +276,9 @@ def main(args: Optional[List[str]] = None) -> int:
 
             # Check if auto-install option is set
             if parsed_args.install_deps:
-                console.print("[bold]Attempting to install missing dependencies...[/bold]")
+                console.print(
+                    "[bold]Attempting to install missing dependencies...[/bold]"
+                )
 
                 try:
                     results = install_missing_dependencies()
@@ -287,15 +289,23 @@ def main(args: Optional[List[str]] = None) -> int:
                     failed = total - success
 
                     if failed == 0:
-                        console.print(f"[bold green]All {total} dependencies are now available[/bold green]")
+                        console.print(
+                            f"[bold green]All {total} dependencies are now available[/bold green]"
+                        )
                     else:
-                        console.print(f"[bold yellow]Successfully installed {success} out of {total} dependencies[/bold yellow]")
-                        console.print(f"[bold yellow]Failed to install {failed} dependencies[/bold yellow]")
+                        console.print(
+                            f"[bold yellow]Successfully installed {success} out of {total} dependencies[/bold yellow]"
+                        )
+                        console.print(
+                            f"[bold yellow]Failed to install {failed} dependencies[/bold yellow]"
+                        )
 
                     console.print("\n[bold]Updated dependency status:[/bold]")
                 except Exception as e:
                     logger.error(f"Error installing dependencies: {e}", exc_info=True)
-                    console.print(f"[bold red]Error installing dependencies:[/bold red] {e}")
+                    console.print(
+                        f"[bold red]Error installing dependencies:[/bold red] {e}"
+                    )
 
             # Generate report based on format
             output_format = parsed_args.format.lower()
@@ -305,14 +315,18 @@ def main(args: Optional[List[str]] = None) -> int:
                 if output_path:
                     # Write to file
                     report = generate_dependency_report(output_format, output_path)
-                    console.print(f"\n[bold green]Dependency report written to:[/bold green] {output_path}")
+                    console.print(
+                        f"\n[bold green]Dependency report written to:[/bold green] {output_path}"
+                    )
                 else:
                     # Display to console
                     report = generate_dependency_report(output_format)
 
                     if output_format == "text":
                         # For text format, add some styled console output
-                        console.print("\n[bold]Insect External Dependencies Status:[/bold]\n")
+                        console.print(
+                            "\n[bold]Insect External Dependencies Status:[/bold]\n"
+                        )
                         console.print(report)
                     else:
                         # For JSON format, just print raw output
@@ -321,7 +335,9 @@ def main(args: Optional[List[str]] = None) -> int:
                 return 0
             except Exception as e:
                 logger.error(f"Error generating dependency report: {e}", exc_info=True)
-                console.print(f"[bold red]Error generating dependency report:[/bold red] {e}")
+                console.print(
+                    f"[bold red]Error generating dependency report:[/bold red] {e}"
+                )
                 return 1
 
         elif parsed_args.command == "clone":
@@ -350,17 +366,22 @@ def main(args: Optional[List[str]] = None) -> int:
                 scan_args = parsed_args.scan_args.split()
 
             # Determine output directory
-            output_dir = parsed_args.output_dir or Path.cwd() / Path(repo_url.split("/")[-1]).stem
+            output_dir = (
+                parsed_args.output_dir
+                or Path.cwd() / Path(repo_url.split("/")[-1]).stem
+            )
 
             # Run the scan in a container
             console.print("[bold]Running scan in Docker container...[/bold]")
-            with console.status("[bold blue]Scanning repository in container...[/bold blue]"):
+            with console.status(
+                "[bold blue]Scanning repository in container...[/bold blue]"
+            ):
                 success, scan_results, commit_hash = run_scan_in_container(
                     repo_url=repo_url,
                     branch=branch,
                     commit=commit,
                     scan_args=scan_args,
-                    image_name=image
+                    image_name=image,
                 )
 
             if not success:
@@ -370,27 +391,39 @@ def main(args: Optional[List[str]] = None) -> int:
             # Summarize scan results
             if isinstance(scan_results, dict):
                 metadata_raw: Any = scan_results.get("scan_metadata", {})
-                metadata: Dict[str, Any] = metadata_raw if isinstance(metadata_raw, dict) else {}
+                metadata: Dict[str, Any] = (
+                    metadata_raw if isinstance(metadata_raw, dict) else {}
+                )
             else:
                 metadata = {}
             findings = scan_results.get("findings", [])
 
-            console.print("\n[bold green]Scan completed successfully in container[/bold green]")
+            console.print(
+                "\n[bold green]Scan completed successfully in container[/bold green]"
+            )
             console.print(f"Repository: {repo_url}")
             console.print(f"Commit: {commit_hash}")
-            console.print(f"Files scanned: {metadata.get('file_count', 0) if isinstance(metadata, dict) else 0}")
-            console.print(f"Issues found: {metadata.get('finding_count', 0) if isinstance(metadata, dict) else 0}")
+            console.print(
+                f"Files scanned: {metadata.get('file_count', 0) if isinstance(metadata, dict) else 0}"
+            )
+            console.print(
+                f"Issues found: {metadata.get('finding_count', 0) if isinstance(metadata, dict) else 0}"
+            )
 
             # Save report if requested
             if parsed_args.report_path:
                 with open(parsed_args.report_path, "w") as f:
                     json.dump(scan_results, f, indent=2)
-                console.print(f"[bold green]Report saved to:[/bold green] {parsed_args.report_path}")
+                console.print(
+                    f"[bold green]Report saved to:[/bold green] {parsed_args.report_path}"
+                )
 
             # If no issues were found or user confirmation
             should_clone = True
-            if (isinstance(metadata, dict) and metadata.get("finding_count", 0) > 0):
-                console.print("\n[bold yellow]Security issues were found in the repository.[/bold yellow]")
+            if isinstance(metadata, dict) and metadata.get("finding_count", 0) > 0:
+                console.print(
+                    "\n[bold yellow]Security issues were found in the repository.[/bold yellow]"
+                )
 
                 # Show a sample of findings
                 if findings:
@@ -398,9 +431,13 @@ def main(args: Optional[List[str]] = None) -> int:
                     for i, finding in enumerate(findings[:3], 1):
                         finding_item: Any = finding  # Explicit type hint for mypy
                         if isinstance(finding_item, dict):
-                            console.print(f"{i}. [{finding_item.get('severity', 'low')}] {finding_item.get('title', 'Unknown issue')}")
+                            console.print(
+                                f"{i}. [{finding_item.get('severity', 'low')}] {finding_item.get('title', 'Unknown issue')}"
+                            )
                         else:
-                            console.print(f"{i}. [{finding_item.severity}] {finding_item.title}")
+                            console.print(
+                                f"{i}. [{finding_item.severity}] {finding_item.title}"
+                            )
 
                     if len(findings) > 3:
                         console.print(f"... and {len(findings) - 3} more issues")
@@ -414,24 +451,29 @@ def main(args: Optional[List[str]] = None) -> int:
 
                 # Ensure output directory does not exist
                 if output_dir.exists():
-                    console.print(f"[bold red]Output directory already exists: {output_dir}[/bold red]")
+                    console.print(
+                        f"[bold red]Output directory already exists: {output_dir}[/bold red]"
+                    )
                     response = input("Do you want to overwrite it? (y/N): ")
                     if response.lower() in ["y", "yes"]:
                         import shutil
+
                         shutil.rmtree(output_dir)
                     else:
-                        console.print("[bold yellow]Clone operation aborted by user[/bold yellow]")
+                        console.print(
+                            "[bold yellow]Clone operation aborted by user[/bold yellow]"
+                        )
                         return 0
 
                 # Clone the repository
                 clone_success = clone_repository(
-                    repo_url=repo_url,
-                    target_path=output_dir,
-                    commit_hash=commit_hash
+                    repo_url=repo_url, target_path=output_dir, commit_hash=commit_hash
                 )
 
                 if clone_success:
-                    console.print(f"[bold green]Repository cloned successfully to {output_dir}[/bold green]")
+                    console.print(
+                        f"[bold green]Repository cloned successfully to {output_dir}[/bold green]"
+                    )
                 else:
                     console.print("[bold red]Failed to clone repository[/bold red]")
                     return 1
@@ -480,7 +522,9 @@ def main(args: Optional[List[str]] = None) -> int:
                 cache_dir = get_cache_dir(config, Path(parsed_args.repo_path))
                 if cache_dir.exists():
                     shutil.rmtree(cache_dir)
-                    console.print(f"[bold green]Cache cleared:[/bold green] {cache_dir}")
+                    console.print(
+                        f"[bold green]Cache cleared:[/bold green] {cache_dir}"
+                    )
 
             # Handle progress bar option
             if parsed_args.no_progress:
@@ -494,14 +538,16 @@ def main(args: Optional[List[str]] = None) -> int:
 
             # Get enabled analyzers based on config and CLI arguments
             disabled_analyzers = parsed_args.disable or []
-            enabled_analyzers = handler.get_enabled_analyzers(config, disabled_analyzers)
+            enabled_analyzers = handler.get_enabled_analyzers(
+                config, disabled_analyzers
+            )
 
             # Run the scan
             with console.status("[bold blue]Scanning repository...[/bold blue]"):
                 scan_findings, metadata = core.scan_repository(
                     Path(parsed_args.repo_path),
                     config,
-                    enabled_analyzers=enabled_analyzers
+                    enabled_analyzers=enabled_analyzers,
                 )
                 findings_list = scan_findings  # Use scan findings
 
@@ -519,19 +565,27 @@ def main(args: Optional[List[str]] = None) -> int:
                 formatter = create_formatter(output_format, config)
 
                 # Ensure findings are in the right format for the formatter
-                findings_for_formatter: List[Any] = findings_list if 'findings_list' in locals() else findings  # type: ignore[assignment]
+                findings_for_formatter: List[Any] = findings_list if "findings_list" in locals() else findings  # type: ignore[assignment]
 
                 if output_path:
                     # Write report to file
-                    output_file = formatter.write_report(findings_for_formatter, metadata, output_path)
-                    console.print(f"\n[bold green]Report written to:[/bold green] {output_file}")
+                    output_file = formatter.write_report(
+                        findings_for_formatter, metadata, output_path
+                    )
+                    console.print(
+                        f"\n[bold green]Report written to:[/bold green] {output_file}"
+                    )
                 else:
                     # If format is text and no output file specified, use Rich for interactive output
                     if output_format == "text":
-                        console.print(f"\n[bold green]Scan Completed[/bold green] in {metadata['duration_seconds']:.2f}s")
+                        console.print(
+                            f"\n[bold green]Scan Completed[/bold green] in {metadata['duration_seconds']:.2f}s"
+                        )
                         console.print(f"Repository: {metadata['repository']}")
                         console.print(f"Files scanned: {metadata['file_count']}")
-                        console.print(f"[bold]Issues found: {metadata['finding_count']}[/bold]")
+                        console.print(
+                            f"[bold]Issues found: {metadata['finding_count']}[/bold]"
+                        )
 
                         # Show cache statistics if available
                         if "cache_stats" in metadata:
@@ -540,61 +594,105 @@ def main(args: Optional[List[str]] = None) -> int:
                             console.print(f"  Cache hits: {cache_stats['hits']}")
                             console.print(f"  Cache misses: {cache_stats['misses']}")
                             if cache_stats["hits"] > 0:
-                                hit_percentage = (cache_stats["hits"] / (cache_stats["hits"] + cache_stats["misses"])) * 100
-                                console.print(f"  Cache hit ratio: {hit_percentage:.1f}%")
+                                hit_percentage = (
+                                    cache_stats["hits"]
+                                    / (cache_stats["hits"] + cache_stats["misses"])
+                                ) * 100
+                                console.print(
+                                    f"  Cache hit ratio: {hit_percentage:.1f}%"
+                                )
 
                         # Display findings by severity
                         severity_counts = metadata["severity_counts"]
                         if sum(severity_counts.values()) > 0:
                             console.print("\n[bold]Issues by severity:[/bold]")
-                            if "critical" in severity_counts and severity_counts["critical"] > 0:
-                                console.print(f"  [bold red]Critical: {severity_counts['critical']}[/bold red]")
-                            if "high" in severity_counts and severity_counts["high"] > 0:
-                                console.print(f"  [red]High: {severity_counts['high']}[/red]")
-                            if "medium" in severity_counts and severity_counts["medium"] > 0:
-                                console.print(f"  [yellow]Medium: {severity_counts['medium']}[/yellow]")
+                            if (
+                                "critical" in severity_counts
+                                and severity_counts["critical"] > 0
+                            ):
+                                console.print(
+                                    f"  [bold red]Critical: {severity_counts['critical']}[/bold red]"
+                                )
+                            if (
+                                "high" in severity_counts
+                                and severity_counts["high"] > 0
+                            ):
+                                console.print(
+                                    f"  [red]High: {severity_counts['high']}[/red]"
+                                )
+                            if (
+                                "medium" in severity_counts
+                                and severity_counts["medium"] > 0
+                            ):
+                                console.print(
+                                    f"  [yellow]Medium: {severity_counts['medium']}[/yellow]"
+                                )
                             if "low" in severity_counts and severity_counts["low"] > 0:
-                                console.print(f"  [blue]Low: {severity_counts['low']}[/blue]")
+                                console.print(
+                                    f"  [blue]Low: {severity_counts['low']}[/blue]"
+                                )
 
                         # Display detailed findings
-                        findings_to_show: Any = findings_list if 'findings_list' in locals() else findings
+                        findings_to_show: Any = (
+                            findings_list if "findings_list" in locals() else findings
+                        )
                         if findings_to_show:
                             console.print("\n[bold]Issues Details:[/bold]")
-                            for i, finding in enumerate(findings_to_show[:10], 1):  # Show at most 10 findings
-                                finding_detail: Any = finding  # Explicit type hint for mypy
+                            for i, finding in enumerate(
+                                findings_to_show[:10], 1
+                            ):  # Show at most 10 findings
+                                finding_detail: Any = (
+                                    finding  # Explicit type hint for mypy
+                                )
                                 color = {
                                     "critical": "bold red",
                                     "high": "red",
                                     "medium": "yellow",
-                                    "low": "blue"
+                                    "low": "blue",
                                 }.get(
-                                    finding_detail.get('severity', 'low') if isinstance(finding_detail, dict) else finding_detail.severity.value,
-                                    "white"
+                                    (
+                                        finding_detail.get("severity", "low")
+                                        if isinstance(finding_detail, dict)
+                                        else finding_detail.severity.value
+                                    ),
+                                    "white",
                                 )
 
                                 if isinstance(finding_detail, dict):
-                                    severity = finding_detail.get('severity', 'low')
-                                    title = finding_detail.get('title', 'Unknown issue')
-                                    location = finding_detail.get('location', 'Unknown location')
-                                    description = finding_detail.get('description', 'No description')
+                                    severity = finding_detail.get("severity", "low")
+                                    title = finding_detail.get("title", "Unknown issue")
+                                    location = finding_detail.get(
+                                        "location", "Unknown location"
+                                    )
+                                    description = finding_detail.get(
+                                        "description", "No description"
+                                    )
                                 else:
                                     severity = finding_detail.severity.value
                                     title = finding_detail.title
                                     location = str(finding_detail.location)
                                     description = finding_detail.description
 
-                                console.print(f"{i}. [{color}][{severity.upper()}][/{color}] {title}")
+                                console.print(
+                                    f"{i}. [{color}][{severity.upper()}][/{color}] {title}"
+                                )
                                 console.print(f"   {location}")
                                 console.print(f"   {description}")
                                 console.print()
 
                             # If there are more findings than we showed
                             if len(findings_to_show) > 10:
-                                console.print(f"... and {len(findings_to_show) - 10} more issues.")
-                                console.print("Use --output and --format to get a full report.")
+                                console.print(
+                                    f"... and {len(findings_to_show) - 10} more issues."
+                                )
+                                console.print(
+                                    "Use --output and --format to get a full report."
+                                )
                     else:
                         # For other formats without output file, print to stdout
-                        report = formatter.format_findings(findings_for_formatter, metadata)
+                        report = formatter.format_findings(
+                            findings_for_formatter, metadata
+                        )
 
             except Exception as e:
                 logger.error(f"Error generating report: {e}", exc_info=True)
@@ -603,8 +701,9 @@ def main(args: Optional[List[str]] = None) -> int:
 
             # Return non-zero exit code if critical or high severity issues found
             severity_counts = metadata["severity_counts"]
-            if ("critical" in severity_counts and severity_counts["critical"] > 0) or \
-               ("high" in severity_counts and severity_counts["high"] > 0):
+            if ("critical" in severity_counts and severity_counts["critical"] > 0) or (
+                "high" in severity_counts and severity_counts["high"] > 0
+            ):
                 return 1
 
             return 0

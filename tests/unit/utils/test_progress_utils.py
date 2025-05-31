@@ -2,7 +2,6 @@
 
 import io
 import time
-from unittest import mock
 
 from insect.utils.progress_utils import (
     ProgressBar,
@@ -57,11 +56,15 @@ def test_progress_formatter():
     assert "Scanning:" in result
 
 
-@mock.patch("sys.stdout", new_callable=io.StringIO)
-def test_progress_bar_basic(mock_stdout):
+def test_progress_bar_basic():
     """Test basic ProgressBar functionality."""
-    # Create a progress bar
-    bar = ProgressBar(total=10, dynamic=False)  # non-dynamic for testing
+    # Create a mock stdout
+    mock_stdout = io.StringIO()
+
+    # Create a progress bar with the mock stdout
+    bar = ProgressBar(
+        total=10, dynamic=False, file=mock_stdout
+    )  # non-dynamic for testing
 
     # Start the bar
     bar.start()
@@ -81,15 +84,17 @@ def test_progress_bar_basic(mock_stdout):
     assert "100.0%" in output
 
 
-@mock.patch("sys.stdout", new_callable=io.StringIO)
-def test_progress_bar_with_suffix_function(mock_stdout):
+def test_progress_bar_with_suffix_function():
     """Test ProgressBar with custom suffix function."""
+    # Create a mock stdout
+    mock_stdout = io.StringIO()
+
     # Create a suffix function
     def custom_suffix(current, total, elapsed):
         return f"Custom: {current}/{total}"
 
     # Create a progress bar with the suffix function
-    bar = ProgressBar(total=5, dynamic=False)
+    bar = ProgressBar(total=5, dynamic=False, file=mock_stdout)
     bar.set_suffix_function(custom_suffix)
 
     # Start and update

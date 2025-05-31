@@ -51,10 +51,7 @@ def check_docker_available() -> bool:
     """
     try:
         result = subprocess.run(
-            ["docker", "--version"],
-            capture_output=True,
-            text=True,
-            check=False
+            ["docker", "--version"], capture_output=True, text=True, check=False
         )
         return result.returncode == 0
     except (FileNotFoundError, subprocess.SubprocessError):
@@ -89,7 +86,7 @@ def build_insect_image(base_image: str = DEFAULT_DOCKER_IMAGE) -> Tuple[bool, st
                 cwd=temp_dir,
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
             logger.info(f"Successfully built Docker image: {image_name}")
             return True, image_name
@@ -121,10 +118,15 @@ def run_scan_in_container(
     if not image_name:
         # Check if default image exists, build if not
         check_image = subprocess.run(
-            ["docker", "image", "inspect", f"insect-scanner:{DEFAULT_DOCKER_IMAGE.replace(':', '-')}"],
+            [
+                "docker",
+                "image",
+                "inspect",
+                f"insect-scanner:{DEFAULT_DOCKER_IMAGE.replace(':', '-')}",
+            ],
             capture_output=True,
             text=True,
-            check=False
+            check=False,
         )
 
         if check_image.returncode != 0:
@@ -143,17 +145,18 @@ def run_scan_in_container(
 
         # Build the Docker command
         docker_cmd = [
-            "docker", "run", "--rm",
-            "-v", f"{output_dir.absolute()}:/output",
+            "docker",
+            "run",
+            "--rm",
+            "-v",
+            f"{output_dir.absolute()}:/output",
             image_name,
-            "/bin/bash", "-c"
+            "/bin/bash",
+            "-c",
         ]
 
         # Build the container commands
-        container_cmd = [
-            f"git clone {repo_url} /scan/repo",
-            "cd /scan/repo"
-        ]
+        container_cmd = [f"git clone {repo_url} /scan/repo", "cd /scan/repo"]
 
         # Check out specific branch if specified
         if branch:
@@ -185,11 +188,13 @@ def run_scan_in_container(
                 docker_cmd,
                 capture_output=True,
                 text=True,
-                check=False  # Don't raise exception on non-zero exit
+                check=False,  # Don't raise exception on non-zero exit
             )
 
             if result.returncode != 0:
-                logger.error(f"Container command failed with exit code {result.returncode}")
+                logger.error(
+                    f"Container command failed with exit code {result.returncode}"
+                )
                 logger.error(f"Error output: {result.stderr}")
                 return False, {}, ""
 
@@ -224,11 +229,7 @@ def run_scan_in_container(
             return False, {}, ""
 
 
-def clone_repository(
-    repo_url: str,
-    target_path: Path,
-    commit_hash: str
-) -> bool:
+def clone_repository(repo_url: str, target_path: Path, commit_hash: str) -> bool:
     """Clone a Git repository at a specific commit.
 
     Args:
@@ -247,7 +248,7 @@ def clone_repository(
             ["git", "clone", repo_url, str(target_path)],
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
 
         # Check out the specific commit
@@ -257,7 +258,7 @@ def clone_repository(
             cwd=target_path,
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
 
         return True

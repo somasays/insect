@@ -22,8 +22,8 @@ class TestBinaryStaticAnalyzer(unittest.TestCase):
 
         # Basic configuration for testing
         self.config = {
-            "analyzers": {"binary_analyzer": True},
-            "binary_analyzer": {
+            "analyzers": {"binary": True},
+            "binary": {
                 "min_confidence": 0.0,
                 "entropy_threshold": HIGH_ENTROPY_THRESHOLD,
                 "use_yara": False,  # Don't use YARA for basic tests
@@ -56,7 +56,7 @@ class TestBinaryStaticAnalyzer(unittest.TestCase):
     def test_init(self):
         """Test analyzer initialization."""
         analyzer = BinaryAnalyzer(self.config)
-        assert analyzer.name == "binary_analyzer"
+        assert analyzer.name == "binary"
         assert analyzer.enabled
         assert not analyzer.use_yara  # Disabled in config
         assert analyzer.entropy_threshold == HIGH_ENTROPY_THRESHOLD
@@ -178,7 +178,7 @@ class TestBinaryStaticAnalyzer(unittest.TestCase):
 
         # Configure analyzer to use YARA
         config = self.config.copy()
-        config["binary_analyzer"]["use_yara"] = True
+        config["binary"]["use_yara"] = True
 
         analyzer = BinaryAnalyzer(config)
         analyzer.compiled_rules = mock_rules

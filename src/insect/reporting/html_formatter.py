@@ -25,6 +25,7 @@ class HtmlFormatter(BaseFormatter):
         """
         # Check if we need to append dependency information
         from insect.analysis.dependency_manager import get_dependencies_status
+
         dependencies = get_dependencies_status()
 
         # Convert findings to a format usable in the template

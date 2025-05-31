@@ -77,7 +77,9 @@ class ScanCache:
             The loaded cache data, or a new cache if none exists.
         """
         if not self.cache_file.exists():
-            logger.debug(f"No cache file found at {self.cache_file}, creating new cache")
+            logger.debug(
+                f"No cache file found at {self.cache_file}, creating new cache"
+            )
             return {
                 "version": 1,
                 "last_scan": datetime.now().isoformat(),
@@ -97,7 +99,9 @@ class ScanCache:
                     "file_hashes": {},
                 }
 
-            logger.info(f"Loaded scan cache with {len(cache_data.get('file_hashes', {}))} entries")
+            logger.info(
+                f"Loaded scan cache with {len(cache_data.get('file_hashes', {}))} entries"
+            )
             return cache_data
 
         except (json.JSONDecodeError, ValueError, KeyError) as e:
@@ -175,9 +179,7 @@ class ScanCache:
         self.stats["hits"] += 1
         return True
 
-    def get_cached_findings(
-        self, file_path: Path, analyzer_name: str
-    ) -> List[Finding]:
+    def get_cached_findings(self, file_path: Path, analyzer_name: str) -> List[Finding]:
         """Get cached findings for a file from a specific analyzer.
 
         Args:
@@ -194,7 +196,9 @@ class ScanCache:
 
         try:
             # Get the cached findings
-            cache_entry = self.cache_data["file_hashes"][str_path]["analyzers"][analyzer_name]
+            cache_entry = self.cache_data["file_hashes"][str_path]["analyzers"][
+                analyzer_name
+            ]
             findings_dicts = cache_entry.get("findings", [])
 
             # Convert the dictionaries back to Finding objects
@@ -234,7 +238,7 @@ class ScanCache:
                 self.cache_data["file_hashes"][str_path] = {
                     "hash": file_hash,
                     "mtime": file_mtime,
-                    "analyzers": {}
+                    "analyzers": {},
                 }
             else:
                 # Update hash and mtime
@@ -247,7 +251,7 @@ class ScanCache:
             # Cache the findings for this analyzer
             self.cache_data["file_hashes"][str_path]["analyzers"][analyzer_name] = {
                 "findings": findings_dicts,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             }
 
             # Update the last scan timestamp

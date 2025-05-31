@@ -53,19 +53,29 @@ class TestCLIArgumentParsing:
 
     def test_scan_command_with_options(self):
         """Test that the scan command with options works."""
-        args = parse_args([
-            "scan",
-            "/path/to/repo",
-            "--output", "report.json",
-            "--format", "json",
-            "--config", "custom_config.toml",
-            "--severity", "high",
-            "--include-pattern", "*.py",
-            "--exclude-pattern", "tests/*",
-            "--disable", "binary",
-            "--max-depth", "5",
-            "--no-secrets"
-        ])
+        args = parse_args(
+            [
+                "scan",
+                "/path/to/repo",
+                "--output",
+                "report.json",
+                "--format",
+                "json",
+                "--config",
+                "custom_config.toml",
+                "--severity",
+                "high",
+                "--include-pattern",
+                "*.py",
+                "--exclude-pattern",
+                "tests/*",
+                "--disable",
+                "binary",
+                "--max-depth",
+                "5",
+                "--no-secrets",
+            ]
+        )
 
         assert args.command == "scan"
         assert args.repo_path == Path("/path/to/repo")
@@ -114,10 +124,25 @@ class TestCLIMain:
 
     def test_main_scan_command(self, capsys):
         """Test that the main function handles the scan command."""
-        with patch("insect.cli.parse_args") as mock_parse_args, \
-             patch("insect.core.scan_repository") as mock_scan_repository:
+        with patch("insect.cli.parse_args") as mock_parse_args, patch(
+            "insect.core.scan_repository"
+        ) as mock_scan_repository:
             # Set up mock return values
-            mock_scan_repository.return_value = ([], {"duration_seconds": 1.0, "repository": "/path/to/repo", "file_count": 0, "finding_count": 0, "severity_counts": {"critical": 0, "high": 0, "medium": 0, "low": 0}})
+            mock_scan_repository.return_value = (
+                [],
+                {
+                    "duration_seconds": 1.0,
+                    "repository": "/path/to/repo",
+                    "file_count": 0,
+                    "finding_count": 0,
+                    "severity_counts": {
+                        "critical": 0,
+                        "high": 0,
+                        "medium": 0,
+                        "low": 0,
+                    },
+                },
+            )
 
             mock_args = argparse.Namespace(
                 command="scan",
@@ -131,7 +156,11 @@ class TestCLIMain:
                 exclude_pattern=None,
                 disable=None,
                 max_depth=None,
-                no_secrets=False
+                no_secrets=False,
+                no_cache=False,
+                clear_cache=False,
+                no_progress=False,
+                install_deps=False,
             )
             mock_parse_args.return_value = mock_args
 

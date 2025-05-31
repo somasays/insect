@@ -276,9 +276,7 @@ SHELL_RULES = [
     ShellDetectionRule(
         rule_id="SH110",
         title="Suspicious process manipulation",
-        description=(
-            "The script manipulates processes in a suspicious manner."
-        ),
+        description=("The script manipulates processes in a suspicious manner."),
         severity=Severity.MEDIUM,
         finding_type=FindingType.SUSPICIOUS,
         regex_pattern=re.compile(
@@ -308,8 +306,7 @@ SHELL_RULES = [
             cwe_id=cwe_id,
             cvss_score=cvss_score,
         )
-        for rule_id, title, description, severity, finding_type, regex_pattern,
-            remediation, references, cwe_id, cvss_score in ADDITIONAL_SHELL_PATTERNS
+        for rule_id, title, description, severity, finding_type, regex_pattern, remediation, references, cwe_id, cvss_score in ADDITIONAL_SHELL_PATTERNS
     ],
 ]
 
@@ -339,14 +336,17 @@ class ShellScriptAnalyzer(BaseAnalyzer):
 
         # Configure ShellCheck usage
         self.use_shellcheck = self.analyzer_config.get("use_shellcheck", True)
-        self.shellcheck_severity = self.analyzer_config.get("shellcheck_severity", "style")
+        self.shellcheck_severity = self.analyzer_config.get(
+            "shellcheck_severity", "style"
+        )
         self.shellcheck_install_instructions = None
 
         # Check if ShellCheck is available using the dependency manager
         if self.use_shellcheck:
             from insect.analysis.static_analyzer_utils import check_tool_availability
-            self.use_shellcheck, self.shellcheck_install_instructions = check_tool_availability(
-                "shellcheck", self.name, required=False
+
+            self.use_shellcheck, self.shellcheck_install_instructions = (
+                check_tool_availability("shellcheck", self.name, required=False)
             )
 
     def analyze_file(self, file_path: Path) -> List[Finding]:
@@ -444,11 +444,9 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                 shellcheck_path,
                 "--format=json",
                 f"--severity={self.shellcheck_severity}",
-                str(file_path)
+                str(file_path),
             ]
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, check=False
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
             # ShellCheck returns 0 if no issues, non-zero if issues found
             if result.returncode not in [0, 1]:
@@ -468,25 +466,45 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                         "info": Severity.LOW,
                         "style": Severity.LOW,
                     }
-                    severity = severity_mapping.get(issue.get("level", "").lower(), Severity.LOW)
+                    severity = severity_mapping.get(
+                        issue.get("level", "").lower(), Severity.LOW
+                    )
 
                     # Determine finding type based on code or message
                     finding_type = FindingType.OTHER
                     message = issue.get("message", "").lower()
 
                     # Security/suspicious issues
-                    if any(kw in message for kw in [
-                        "injection", "arbitrary", "suspicious", "security", "backdoor",
-                        "insecure", "unsafe", "dangerous", "malicious", "privilege"
-                    ]):
+                    if any(
+                        kw in message
+                        for kw in [
+                            "injection",
+                            "arbitrary",
+                            "suspicious",
+                            "security",
+                            "backdoor",
+                            "insecure",
+                            "unsafe",
+                            "dangerous",
+                            "malicious",
+                            "privilege",
+                        ]
+                    ):
                         finding_type = FindingType.SUSPICIOUS
                         if severity == Severity.LOW:
                             severity = Severity.MEDIUM
 
                     # Configuration issues
-                    elif any(kw in message for kw in [
-                        "configuration", "undefined", "not found", "deprecated", "export"
-                    ]):
+                    elif any(
+                        kw in message
+                        for kw in [
+                            "configuration",
+                            "undefined",
+                            "not found",
+                            "deprecated",
+                            "export",
+                        ]
+                    ):
                         finding_type = FindingType.MISCONFIG
 
                     # Extract code snippet and location
@@ -496,7 +514,11 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                     endcolumn = issue.get("endColumn", column + 1)
 
                     # Get the snippet if available
-                    snippet = issue.get("fix", {}).get("replacements", [{}])[0].get("text", "")
+                    snippet = (
+                        issue.get("fix", {})
+                        .get("replacements", [{}])[0]
+                        .get("text", "")
+                    )
                     if not snippet:
                         # Use code/message as snippet if replacement text not available
                         snippet = issue.get("code", "") or message
@@ -508,14 +530,18 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                         "info": 0.5,
                         "style": 0.4,
                     }
-                    confidence = confidence_mapping.get(issue.get("level", "").lower(), 0.5)
+                    confidence = confidence_mapping.get(
+                        issue.get("level", "").lower(), 0.5
+                    )
 
                     # Create finding
                     findings.append(
                         Finding(
                             id=f"SHELLCHECK-SC{issue.get('code', 0)}-{uuid.uuid4().hex[:8]}",
                             title=f"ShellCheck: {message}",
-                            description=issue.get("message", "Unknown ShellCheck issue"),
+                            description=issue.get(
+                                "message", "Unknown ShellCheck issue"
+                            ),
                             severity=severity,
                             type=finding_type,
                             location=Location(
@@ -562,9 +588,9 @@ class ShellScriptAnalyzer(BaseAnalyzer):
         hex_pattern = re.compile(r'["\' ]([0-9a-fA-F]{20,})[\'".,;\)\]\}]')
         url_pattern = re.compile(
             r'[\'"`](https?://(?:[a-zA-Z0-9\-._~:/?#[\]@!$&\'\(\)\*\+,;=]|'
-            r'%[0-9a-fA-F]{2})+|'
+            r"%[0-9a-fA-F]{2})+|"
             r'https?://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:[:/]\S*)?)[\'"`]',
-            re.IGNORECASE
+            re.IGNORECASE,
         )
 
         for i, line in enumerate(lines):
@@ -582,11 +608,47 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                     end_idx = min(len(lines), i + 3)
                     snippet = "\n".join(lines[start_idx:end_idx])
 
-                    findings.append(Finding(
-                        id=f"SH102-BASE64-{uuid.uuid4().hex[:8]}",
-                        title="Potential encoded payload (Base64)",
+                    findings.append(
+                        Finding(
+                            id=f"SH102-BASE64-{uuid.uuid4().hex[:8]}",
+                            title="Potential encoded payload (Base64)",
+                            description=(
+                                "The script contains what appears to be a base64-encoded string "
+                                "that could hide malicious content."
+                            ),
+                            severity=Severity.MEDIUM,
+                            type=FindingType.SUSPICIOUS,
+                            location=Location(
+                                path=file_path,
+                                line_start=line_num,
+                                line_end=line_num,
+                                column_start=match.start(),
+                                column_end=match.end(),
+                                snippet=snippet,
+                            ),
+                            analyzer=self.name,
+                            confidence=0.6,
+                            references=["https://attack.mitre.org/techniques/T1027/"],
+                            tags=["encoded-payload", "base64", "obfuscation", "shell"],
+                            remediation="Decode and inspect this string for malicious content.",
+                            cwe_id="CWE-506",
+                            cvss_score=5.5,
+                        )
+                    )
+
+            # Check for hex payloads
+            for match in hex_pattern.finditer(line):
+                # Extract snippet with some context
+                start_idx = max(0, i - 2)
+                end_idx = min(len(lines), i + 3)
+                snippet = "\n".join(lines[start_idx:end_idx])
+
+                findings.append(
+                    Finding(
+                        id=f"SH102-HEX-{uuid.uuid4().hex[:8]}",
+                        title="Potential encoded payload (Hex)",
                         description=(
-                            "The script contains what appears to be a base64-encoded string "
+                            "The script contains what appears to be a hex-encoded string "
                             "that could hide malicious content."
                         ),
                         severity=Severity.MEDIUM,
@@ -597,49 +659,17 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                             line_end=line_num,
                             column_start=match.start(),
                             column_end=match.end(),
-                            snippet=snippet
+                            snippet=snippet,
                         ),
                         analyzer=self.name,
                         confidence=0.6,
                         references=["https://attack.mitre.org/techniques/T1027/"],
-                        tags=["encoded-payload", "base64", "obfuscation", "shell"],
+                        tags=["encoded-payload", "hex", "obfuscation", "shell"],
                         remediation="Decode and inspect this string for malicious content.",
                         cwe_id="CWE-506",
-                        cvss_score=5.5
-                    ))
-
-            # Check for hex payloads
-            for match in hex_pattern.finditer(line):
-                # Extract snippet with some context
-                start_idx = max(0, i - 2)
-                end_idx = min(len(lines), i + 3)
-                snippet = "\n".join(lines[start_idx:end_idx])
-
-                findings.append(Finding(
-                    id=f"SH102-HEX-{uuid.uuid4().hex[:8]}",
-                    title="Potential encoded payload (Hex)",
-                    description=(
-                        "The script contains what appears to be a hex-encoded string "
-                        "that could hide malicious content."
-                    ),
-                    severity=Severity.MEDIUM,
-                    type=FindingType.SUSPICIOUS,
-                    location=Location(
-                        path=file_path,
-                        line_start=line_num,
-                        line_end=line_num,
-                        column_start=match.start(),
-                        column_end=match.end(),
-                        snippet=snippet
-                    ),
-                    analyzer=self.name,
-                    confidence=0.6,
-                    references=["https://attack.mitre.org/techniques/T1027/"],
-                    tags=["encoded-payload", "hex", "obfuscation", "shell"],
-                    remediation="Decode and inspect this string for malicious content.",
-                    cwe_id="CWE-506",
-                    cvss_score=5.5
-                ))
+                        cvss_score=5.5,
+                    )
+                )
 
             # Check for URL patterns
             for match in url_pattern.finditer(line):
@@ -648,31 +678,33 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                 end_idx = min(len(lines), i + 3)
                 snippet = "\n".join(lines[start_idx:end_idx])
 
-                findings.append(Finding(
-                    id=f"SH104-URL-{uuid.uuid4().hex[:8]}",
-                    title="Suspicious network connection",
-                    description=(
-                        f"The script contains a URL ({match.group(0)}) that could be "
-                        f"used for malicious network connections."
-                    ),
-                    severity=Severity.MEDIUM,
-                    type=FindingType.SUSPICIOUS,
-                    location=Location(
-                        path=file_path,
-                        line_start=line_num,
-                        line_end=line_num,
-                        column_start=match.start(),
-                        column_end=match.end(),
-                        snippet=snippet
-                    ),
-                    analyzer=self.name,
-                    confidence=0.7,
-                    references=["https://attack.mitre.org/techniques/T1071/"],
-                    tags=["network", "url", "connection", "shell"],
-                    remediation="Verify this network connection is to a legitimate service.",
-                    cwe_id="CWE-913",
-                    cvss_score=6.5
-                ))
+                findings.append(
+                    Finding(
+                        id=f"SH104-URL-{uuid.uuid4().hex[:8]}",
+                        title="Suspicious network connection",
+                        description=(
+                            f"The script contains a URL ({match.group(0)}) that could be "
+                            f"used for malicious network connections."
+                        ),
+                        severity=Severity.MEDIUM,
+                        type=FindingType.SUSPICIOUS,
+                        location=Location(
+                            path=file_path,
+                            line_start=line_num,
+                            line_end=line_num,
+                            column_start=match.start(),
+                            column_end=match.end(),
+                            snippet=snippet,
+                        ),
+                        analyzer=self.name,
+                        confidence=0.7,
+                        references=["https://attack.mitre.org/techniques/T1071/"],
+                        tags=["network", "url", "connection", "shell"],
+                        remediation="Verify this network connection is to a legitimate service.",
+                        cwe_id="CWE-913",
+                        cvss_score=6.5,
+                    )
+                )
 
             # Check rule-based patterns
             for rule in self.rules:
@@ -684,32 +716,34 @@ class ShellScriptAnalyzer(BaseAnalyzer):
                         end_idx = min(len(lines), i + 3)
                         snippet = "\n".join(lines[start_idx:end_idx])
 
-                        findings.append(Finding(
-                            id=f"{rule.rule_id}-{uuid.uuid4().hex[:8]}",
-                            title=rule.title,
-                            description=rule.description,
-                            severity=rule.severity,
-                            type=rule.finding_type,
-                            location=Location(
-                                path=file_path,
-                                line_start=line_num,
-                                line_end=line_num,
-                                column_start=match.start(),
-                                column_end=match.end(),
-                                snippet=snippet
-                            ),
-                            analyzer=self.name,
-                            confidence=0.7,  # Regex matches are less certain
-                            references=rule.references,
-                            tags=[
-                                f"rule:{rule.rule_id}",
-                                "regex",
-                                "malicious-pattern",
-                                "shell"
-                            ],
-                            remediation=rule.remediation,
-                            cwe_id=rule.cwe_id,
-                            cvss_score=rule.cvss_score
-                        ))
+                        findings.append(
+                            Finding(
+                                id=f"{rule.rule_id}-{uuid.uuid4().hex[:8]}",
+                                title=rule.title,
+                                description=rule.description,
+                                severity=rule.severity,
+                                type=rule.finding_type,
+                                location=Location(
+                                    path=file_path,
+                                    line_start=line_num,
+                                    line_end=line_num,
+                                    column_start=match.start(),
+                                    column_end=match.end(),
+                                    snippet=snippet,
+                                ),
+                                analyzer=self.name,
+                                confidence=0.7,  # Regex matches are less certain
+                                references=rule.references,
+                                tags=[
+                                    f"rule:{rule.rule_id}",
+                                    "regex",
+                                    "malicious-pattern",
+                                    "shell",
+                                ],
+                                remediation=rule.remediation,
+                                cwe_id=rule.cwe_id,
+                                cvss_score=rule.cvss_score,
+                            )
+                        )
 
         return findings

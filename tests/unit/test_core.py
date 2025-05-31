@@ -114,8 +114,9 @@ def test_discover_files(mock_config):
         rel_path = str(self).replace(str(base) + "/", "")
         return Path(rel_path)
 
-    with patch("os.walk", return_value=mock_walk_data), \
-         patch.object(Path, "relative_to", mock_relative_to):
+    with patch("os.walk", return_value=mock_walk_data), patch.object(
+        Path, "relative_to", mock_relative_to
+    ):
 
         # Test with default config
         result = discover_files(Path("/repo"), mock_config)
@@ -138,14 +139,18 @@ def test_discover_files(mock_config):
         mock_config["general"]["include_hidden"] = True
         result_with_hidden = discover_files(Path("/repo"), mock_config)
         assert Path("/repo/.gitignore") in result_with_hidden
-        assert Path("/repo/.git/config") not in result_with_hidden  # Still excluded by pattern
+        assert (
+            Path("/repo/.git/config") not in result_with_hidden
+        )  # Still excluded by pattern
 
         # Test with max_depth=1 - this should only include files directly in /repo
         result_depth_1 = discover_files(Path("/repo"), mock_config, max_depth=1)
 
         # Should include files in the root only
         assert Path("/repo/README.md") in result_depth_1
-        assert Path("/repo/.gitignore") in result_depth_1  # Hidden but include_hidden=True
+        assert (
+            Path("/repo/.gitignore") in result_depth_1
+        )  # Hidden but include_hidden=True
 
         # Should exclude files deeper than depth 1
         assert Path("/repo/src/main.py") not in result_depth_1
@@ -156,10 +161,17 @@ def test_discover_files(mock_config):
 def test_scan_repository(mock_config):
     """Test scan_repository function."""
     # Mock necessary functions to isolate the test
-    with patch("insect.core.discover_files", return_value=[]) as mock_discover, \
-         patch("pathlib.Path.exists", return_value=True), \
-         patch("insect.core.logger"), \
-         patch("insect.core.create_analyzers", return_value=[]):
+    with patch("insect.core.discover_files", return_value=[]) as mock_discover, patch(
+        "pathlib.Path.exists", return_value=True
+    ), patch("insect.core.logger"), patch(
+        "insect.core.create_analyzers", return_value=[]
+    ), patch(
+        "insect.utils.cache_utils.cache_enabled", return_value=False
+    ), patch(
+        "tempfile.mkdtemp", return_value="/tmp/test_cache"
+    ), patch(
+        "insect.analysis.dependency_manager.get_dependencies_status", return_value={}
+    ):
 
         # Test with default enabled analyzers
         findings, metadata = scan_repository(Path("/repo"), mock_config)
@@ -173,6 +185,13 @@ def test_scan_repository(mock_config):
         assert "scan_id" in metadata
         assert "repository" in metadata
         assert metadata["file_count"] == 0
+
+        # Debug: print findings if any exist
+        if len(findings) > 0:
+            print(f"Unexpected findings: {len(findings)}")
+            for finding in findings:
+                print(f"  - {finding.title} (analyzer: {finding.analyzer})")
+
         assert metadata["finding_count"] == 0
 
         # Test with non-existent repository
@@ -191,9 +210,11 @@ def test_scan_repository(mock_config):
                 "repository": "/repo",
                 "file_count": 0,
                 "finding_count": 0,
-                "severity_counts": {"critical": 0, "high": 0, "medium": 0, "low": 0}
+                "severity_counts": {"critical": 0, "high": 0, "medium": 0, "low": 0},
             }
-            findings, metadata = scan_repository(Path("/repo"), mock_config, enabled_analyzers=enabled)
+            findings, metadata = scan_repository(
+                Path("/repo"), mock_config, enabled_analyzers=enabled
+            )
             assert isinstance(findings, list)
             assert isinstance(metadata, dict)
             assert metadata["enabled_analyzers"] == ["static"]

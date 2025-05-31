@@ -217,7 +217,7 @@ def check_dependency(
             [tool_path] + dependency.version_args,
             capture_output=True,
             check=False,
-            text=True
+            text=True,
         )
 
         # Try to extract version from output
@@ -236,7 +236,11 @@ def check_dependency(
                     break
 
         # Check minimum version if specified
-        if dependency.min_version and version and not _is_version_sufficient(version, dependency.min_version):
+        if (
+            dependency.min_version
+            and version
+            and not _is_version_sufficient(version, dependency.min_version)
+        ):
             logger.warning(
                 f"{dependency_name.capitalize()} version {version} is lower than "
                 f"the recommended minimum version {dependency.min_version}."
@@ -340,7 +344,9 @@ def install_dependency(dependency_name: str) -> bool:
         install_cmd = dependency.install_instructions.get("default", "")
 
     if not install_cmd:
-        logger.warning(f"No installation instructions available for {dependency_name} on {platform}")
+        logger.warning(
+            f"No installation instructions available for {dependency_name} on {platform}"
+        )
         return False
 
     # If multiple installation methods are provided, use the first one (usually pip)
@@ -354,12 +360,7 @@ def install_dependency(dependency_name: str) -> bool:
         cmd_parts = install_cmd.split()
 
         # Run the installation command
-        result = subprocess.run(
-            cmd_parts,
-            capture_output=True,
-            check=False,
-            text=True
-        )
+        result = subprocess.run(cmd_parts, capture_output=True, check=False, text=True)
 
         if result.returncode != 0:
             logger.error(f"Failed to install {dependency_name}: {result.stderr}")
@@ -368,7 +369,9 @@ def install_dependency(dependency_name: str) -> bool:
         logger.info(f"Successfully installed {dependency_name}")
 
         # Verify installation
-        status, version, path = check_dependency(dependency_name, "install_verification")
+        status, version, path = check_dependency(
+            dependency_name, "install_verification"
+        )
         return status == DependencyStatus.AVAILABLE
 
     except Exception as e:
@@ -444,6 +447,7 @@ def generate_dependency_report(
 
     if format_type == "json":
         import json
+
         report = json.dumps(dependencies, indent=2)
 
         if output_path:

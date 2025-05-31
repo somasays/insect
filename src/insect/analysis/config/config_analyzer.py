@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Pattern
 
 import toml
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 from insect.analysis import BaseAnalyzer, register_analyzer
 from insect.finding import Finding, FindingType, Location, Severity
@@ -710,9 +710,11 @@ class ConfigAnalyzer(BaseAnalyzer):
                                     line_start=line_number,
                                     line_end=line_number,
                                     column_start=0,
-                                    column_end=len(lines[line_number - 1])
-                                    if line_number <= len(lines)
-                                    else 0,
+                                    column_end=(
+                                        len(lines[line_number - 1])
+                                        if line_number <= len(lines)
+                                        else 0
+                                    ),
                                     snippet=snippet,
                                 ),
                                 analyzer=self.name,
@@ -815,9 +817,11 @@ class ConfigAnalyzer(BaseAnalyzer):
                                     line_start=line_number,
                                     line_end=line_number,
                                     column_start=0,
-                                    column_end=len(lines[line_number - 1])
-                                    if line_number <= len(lines)
-                                    else 0,
+                                    column_end=(
+                                        len(lines[line_number - 1])
+                                        if line_number <= len(lines)
+                                        else 0
+                                    ),
                                     snippet=snippet,
                                 ),
                                 analyzer=self.name,
@@ -884,36 +888,38 @@ class ConfigAnalyzer(BaseAnalyzer):
 
                 # Check if version matches any vulnerable version
                 for vuln_version_range in KNOWN_VULNERABLE_NPM_PACKAGES[pkg]:
-                    if vuln_version_range.startswith("<") and self._version_lt(raw_version, vuln_version_range[1:]):
-                            findings.append(
-                                Finding(
-                                    id=f"NPM001-{uuid.uuid4().hex[:8]}",
-                                    title=f"Vulnerable NPM package: {pkg}",
-                                    description=(
-                                        f"Package {pkg}@{version} has known vulnerabilities in versions {vuln_version_range}. "
-                                        f"This is a {'development' if is_dev else 'production'} dependency."
-                                    ),
-                                    severity=Severity.HIGH,
-                                    type=FindingType.VULNERABILITY,
-                                    location=Location(
-                                        path=file_path,
-                                        snippet=f'"dependencies": {{\n  "{pkg}": "{version}"\n}}',
-                                    ),
-                                    analyzer=self.name,
-                                    confidence=0.9,
-                                    references=["https://www.npmjs.com/advisories"],
-                                    tags=[
-                                        "npm",
-                                        "dependency",
-                                        "vulnerability",
-                                        "package-json",
-                                    ],
-                                    remediation=f"Update {pkg} to a version not affected by known vulnerabilities.",
-                                    cwe_id="CWE-1104",  # Use of Unmaintained Third Party Components
-                                    cvss_score=7.5,
-                                )
+                    if vuln_version_range.startswith("<") and self._version_lt(
+                        raw_version, vuln_version_range[1:]
+                    ):
+                        findings.append(
+                            Finding(
+                                id=f"NPM001-{uuid.uuid4().hex[:8]}",
+                                title=f"Vulnerable NPM package: {pkg}",
+                                description=(
+                                    f"Package {pkg}@{version} has known vulnerabilities in versions {vuln_version_range}. "
+                                    f"This is a {'development' if is_dev else 'production'} dependency."
+                                ),
+                                severity=Severity.HIGH,
+                                type=FindingType.VULNERABILITY,
+                                location=Location(
+                                    path=file_path,
+                                    snippet=f'"dependencies": {{\n  "{pkg}": "{version}"\n}}',
+                                ),
+                                analyzer=self.name,
+                                confidence=0.9,
+                                references=["https://www.npmjs.com/advisories"],
+                                tags=[
+                                    "npm",
+                                    "dependency",
+                                    "vulnerability",
+                                    "package-json",
+                                ],
+                                remediation=f"Update {pkg} to a version not affected by known vulnerabilities.",
+                                cwe_id="CWE-1104",  # Use of Unmaintained Third Party Components
+                                cvss_score=7.5,
                             )
-                            break
+                        )
+                        break
 
     def _version_lt(self, version1: str, version2: str) -> bool:
         """Compare two version strings.
@@ -1089,9 +1095,11 @@ class ConfigAnalyzer(BaseAnalyzer):
                                     line_start=line_number,
                                     line_end=line_number,
                                     column_start=0,
-                                    column_end=len(lines[line_number - 1])
-                                    if line_number <= len(lines)
-                                    else 0,
+                                    column_end=(
+                                        len(lines[line_number - 1])
+                                        if line_number <= len(lines)
+                                        else 0
+                                    ),
                                     snippet=snippet,
                                 ),
                                 analyzer=self.name,
@@ -1129,49 +1137,47 @@ class ConfigAnalyzer(BaseAnalyzer):
                             for vuln_version_range in KNOWN_VULNERABLE_PYTHON_PACKAGES[
                                 package_name
                             ]:
-                                if vuln_version_range.startswith("<") and self._version_lt(
-                                        version, vuln_version_range[1:]
-                                    ):
-                                        # Create a snippet with context
-                                        start_idx = max(0, line_number - 4)
-                                        end_idx = min(len(lines), line_number + 3)
-                                        snippet = "\n".join(
-                                            lines[start_idx - 1 : end_idx]
-                                        )
+                                if vuln_version_range.startswith(
+                                    "<"
+                                ) and self._version_lt(version, vuln_version_range[1:]):
+                                    # Create a snippet with context
+                                    start_idx = max(0, line_number - 4)
+                                    end_idx = min(len(lines), line_number + 3)
+                                    snippet = "\n".join(lines[start_idx - 1 : end_idx])
 
-                                        findings.append(
-                                            Finding(
-                                                id=f"PIP002-{uuid.uuid4().hex[:8]}",
-                                                title=f"Vulnerable Python package: {package_name}",
-                                                description=(
-                                                    f"Package {package_name}=={version} has known vulnerabilities "
-                                                    f"in versions {vuln_version_range}."
-                                                ),
-                                                severity=Severity.HIGH,
-                                                type=FindingType.VULNERABILITY,
-                                                location=Location(
-                                                    path=file_path,
-                                                    line_start=line_number,
-                                                    line_end=line_number,
-                                                    snippet=snippet,
-                                                ),
-                                                analyzer=self.name,
-                                                confidence=0.9,
-                                                references=[
-                                                    "https://pypi.org/project/safety/"
-                                                ],
-                                                tags=[
-                                                    "python",
-                                                    "pip",
-                                                    "dependency",
-                                                    "vulnerability",
-                                                ],
-                                                remediation=f"Update {package_name} to a non-vulnerable version.",
-                                                cwe_id="CWE-1104",  # Use of Unmaintained Third Party Components
-                                                cvss_score=7.5,
-                                            )
+                                    findings.append(
+                                        Finding(
+                                            id=f"PIP002-{uuid.uuid4().hex[:8]}",
+                                            title=f"Vulnerable Python package: {package_name}",
+                                            description=(
+                                                f"Package {package_name}=={version} has known vulnerabilities "
+                                                f"in versions {vuln_version_range}."
+                                            ),
+                                            severity=Severity.HIGH,
+                                            type=FindingType.VULNERABILITY,
+                                            location=Location(
+                                                path=file_path,
+                                                line_start=line_number,
+                                                line_end=line_number,
+                                                snippet=snippet,
+                                            ),
+                                            analyzer=self.name,
+                                            confidence=0.9,
+                                            references=[
+                                                "https://pypi.org/project/safety/"
+                                            ],
+                                            tags=[
+                                                "python",
+                                                "pip",
+                                                "dependency",
+                                                "vulnerability",
+                                            ],
+                                            remediation=f"Update {package_name} to a non-vulnerable version.",
+                                            cwe_id="CWE-1104",  # Use of Unmaintained Third Party Components
+                                            cvss_score=7.5,
                                         )
-                                        break
+                                    )
+                                    break
 
             # Use safety if available
             if self.use_safety:
@@ -1309,9 +1315,11 @@ class ConfigAnalyzer(BaseAnalyzer):
                                     line_start=line_number,
                                     line_end=line_number,
                                     column_start=0,
-                                    column_end=len(lines[line_number - 1])
-                                    if line_number <= len(lines)
-                                    else 0,
+                                    column_end=(
+                                        len(lines[line_number - 1])
+                                        if line_number <= len(lines)
+                                        else 0
+                                    ),
                                     snippet=snippet,
                                 ),
                                 analyzer=self.name,
@@ -1645,9 +1653,11 @@ class ConfigAnalyzer(BaseAnalyzer):
                                     line_start=line_number,
                                     line_end=line_number,
                                     column_start=0,
-                                    column_end=len(lines[line_number - 1])
-                                    if line_number <= len(lines)
-                                    else 0,
+                                    column_end=(
+                                        len(lines[line_number - 1])
+                                        if line_number <= len(lines)
+                                        else 0
+                                    ),
                                     snippet=snippet,
                                 ),
                                 analyzer=self.name,
@@ -1726,68 +1736,70 @@ class ConfigAnalyzer(BaseAnalyzer):
                                 for (
                                     vuln_version_range
                                 ) in KNOWN_VULNERABLE_PYTHON_PACKAGES[package_name]:
-                                    if vuln_version_range.startswith("<") and self._version_lt(
-                                            version, vuln_version_range[1:]
-                                        ):
-                                            # Find line number (approximate)
-                                            pattern = re.compile(
-                                                f"{re.escape(dep)}", re.MULTILINE
-                                            )
-                                            matches = list(pattern.finditer(content))
-                                            line_number = (
-                                                content[: matches[0].start()].count(
-                                                    "\n"
-                                                )
-                                                + 1
-                                                if matches
-                                                else 1
-                                            )
+                                    if vuln_version_range.startswith(
+                                        "<"
+                                    ) and self._version_lt(
+                                        version, vuln_version_range[1:]
+                                    ):
+                                        # Find line number (approximate)
+                                        pattern = re.compile(
+                                            f"{re.escape(dep)}", re.MULTILINE
+                                        )
+                                        matches = list(pattern.finditer(content))
+                                        line_number = (
+                                            content[: matches[0].start()].count("\n")
+                                            + 1
+                                            if matches
+                                            else 1
+                                        )
 
-                                            # Extract snippet
-                                            start_idx = max(0, line_number - 4)
-                                            end_idx = min(len(lines), line_number + 3)
-                                            snippet = "\n".join(
-                                                lines[start_idx:end_idx]
-                                            )
+                                        # Extract snippet
+                                        start_idx = max(0, line_number - 4)
+                                        end_idx = min(len(lines), line_number + 3)
+                                        snippet = "\n".join(lines[start_idx:end_idx])
 
-                                            findings.append(
-                                                Finding(
-                                                    id=f"PYPOT-VULN-{uuid.uuid4().hex[:8]}",
-                                                    title=f"Vulnerable Python package: {package_name}",
-                                                    description=(
-                                                        f"Package {package_name}=={version} has known vulnerabilities "
-                                                        f"in versions {vuln_version_range}."
-                                                    ),
-                                                    severity=Severity.HIGH,
-                                                    type=FindingType.VULNERABILITY,
-                                                    location=Location(
-                                                        path=file_path,
-                                                        line_start=line_number,
-                                                        line_end=line_number,
-                                                        snippet=snippet,
-                                                    ),
-                                                    analyzer=self.name,
-                                                    confidence=0.9,
-                                                    references=[
-                                                        "https://pypi.org/project/safety/"
-                                                    ],
-                                                    tags=[
-                                                        "python",
-                                                        "dependency",
-                                                        "vulnerability",
-                                                        "pyproject",
-                                                    ],
-                                                    remediation=f"Update {package_name} to a non-vulnerable version.",
-                                                    cwe_id="CWE-1104",  # Use of Unmaintained Third Party Components
-                                                    cvss_score=7.5,
-                                                )
+                                        findings.append(
+                                            Finding(
+                                                id=f"PYPOT-VULN-{uuid.uuid4().hex[:8]}",
+                                                title=f"Vulnerable Python package: {package_name}",
+                                                description=(
+                                                    f"Package {package_name}=={version} has known vulnerabilities "
+                                                    f"in versions {vuln_version_range}."
+                                                ),
+                                                severity=Severity.HIGH,
+                                                type=FindingType.VULNERABILITY,
+                                                location=Location(
+                                                    path=file_path,
+                                                    line_start=line_number,
+                                                    line_end=line_number,
+                                                    snippet=snippet,
+                                                ),
+                                                analyzer=self.name,
+                                                confidence=0.9,
+                                                references=[
+                                                    "https://pypi.org/project/safety/"
+                                                ],
+                                                tags=[
+                                                    "python",
+                                                    "dependency",
+                                                    "vulnerability",
+                                                    "pyproject",
+                                                ],
+                                                remediation=f"Update {package_name} to a non-vulnerable version.",
+                                                cwe_id="CWE-1104",  # Use of Unmaintained Third Party Components
+                                                cvss_score=7.5,
                                             )
-                                            break
+                                        )
+                                        break
 
         return findings
 
     def _analyze_cargo_toml(
-        self, file_path: Path, toml_data: Dict, content: str, lines: List[str]  # noqa: ARG002
+        self,
+        file_path: Path,
+        toml_data: Dict,
+        content: str,
+        lines: List[str],  # noqa: ARG002
     ) -> List[Finding]:
         """Analyze a Cargo.toml file for security issues.
 

@@ -59,8 +59,8 @@ class JavaScriptStaticAnalyzer(BaseAnalyzer):
 
         # Check tool availability using the dependency manager
         if self.use_semgrep:
-            self.use_semgrep, self.semgrep_install_instructions = check_tool_availability(
-                "semgrep", self.name, required=False
+            self.use_semgrep, self.semgrep_install_instructions = (
+                check_tool_availability("semgrep", self.name, required=False)
             )
 
     def analyze_file(self, file_path: Path) -> List[Finding]:
@@ -261,9 +261,9 @@ class JavaScriptStaticAnalyzer(BaseAnalyzer):
                             ),
                             analyzer="semgrep",
                             confidence=metadata.get("confidence_level", 0.8),
-                            references=[ref for ref in [first_ref] if ref]
-                            if first_ref
-                            else [],
+                            references=(
+                                [ref for ref in [first_ref] if ref] if first_ref else []
+                            ),
                             tags=[
                                 "semgrep",
                                 f"semgrep_rule:{rule_id}",

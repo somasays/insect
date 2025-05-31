@@ -199,7 +199,11 @@ class ASTVisitor(ast.NodeVisitor):
             and node.func.attr == "urlopen"
         ):
             for arg in node.args:
-                if isinstance(arg, ast.Constant) and isinstance(arg.value, str) and "http" in arg.value.lower():
+                if (
+                    isinstance(arg, ast.Constant)
+                    and isinstance(arg.value, str)
+                    and "http" in arg.value.lower()
+                ):
                     end_col_offset = (
                         getattr(node, "end_col_offset", node.col_offset + 1)
                         if hasattr(node, "end_col_offset")
@@ -222,15 +226,13 @@ class ASTVisitor(ast.NodeVisitor):
                             ),
                             analyzer="python_static_analyzer",
                             confidence=0.7,
-                            references=[
-                                "https://attack.mitre.org/techniques/T1071/"
-                            ],
+                            references=["https://attack.mitre.org/techniques/T1071/"],
                             tags=["network", "url", "python"],
                             remediation="Verify this connection is to a legitimate service.",
                             cwe_id="CWE-913",
                             cvss_score=7.0,
                         )
-                        )
+                    )
 
         # Check for reverse shell patterns
         if isinstance(node.func, ast.Attribute) and isinstance(

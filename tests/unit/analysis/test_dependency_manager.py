@@ -44,7 +44,7 @@ def test_dependency_info():
         required=True,
         version_args=["--version"],
         min_version="1.0.0",
-        install_instructions={"default": "pip install test"}
+        install_instructions={"default": "pip install test"},
     )
 
     assert info.name == "test"
@@ -63,7 +63,7 @@ def test_dependency_info():
         "linux": "apt install test",
         "darwin": "brew install test",
         "win32": "choco install test",
-        "default": "pip install test"
+        "default": "pip install test",
     }
 
     with mock.patch.object(sys, "platform", "linux"):
@@ -181,6 +181,7 @@ def test_check_dependency_broken(mock_run, mock_which):
 @mock.patch("insect.analysis.dependency_manager.check_dependency")
 def test_get_dependencies_status(mock_check_dependency):
     """Test the get_dependencies_status function."""
+
     # Mock check_dependency to return different statuses for different dependencies
     def mock_check_side_effect(dep_name, *args):
         if dep_name == "bandit":
@@ -222,7 +223,7 @@ def test_generate_dependency_report_text(mock_get_dependencies_status):
             "required": "False",
             "version": "1.7.5",
             "path": "/usr/bin/bandit",
-            "install": "pip install bandit"
+            "install": "pip install bandit",
         },
         "semgrep": {
             "status": "not_found",
@@ -230,8 +231,8 @@ def test_generate_dependency_report_text(mock_get_dependencies_status):
             "required": "False",
             "version": "unknown",
             "path": "not found",
-            "install": "pip install semgrep"
-        }
+            "install": "pip install semgrep",
+        },
     }
 
     # Generate text report
@@ -265,7 +266,7 @@ def test_generate_dependency_report_json(mock_get_dependencies_status):
             "required": "False",
             "version": "1.7.5",
             "path": "/usr/bin/bandit",
-            "install": "pip install bandit"
+            "install": "pip install bandit",
         },
         "semgrep": {
             "status": "not_found",
@@ -273,8 +274,8 @@ def test_generate_dependency_report_json(mock_get_dependencies_status):
             "required": "False",
             "version": "unknown",
             "path": "not found",
-            "install": "pip install semgrep"
-        }
+            "install": "pip install semgrep",
+        },
     }
     mock_get_dependencies_status.return_value = mock_deps
 
@@ -339,7 +340,7 @@ def test_install_missing_dependencies(mock_get_status, mock_install):
     mock_get_status.return_value = {
         "bandit": {"status": "available", "version": "1.7.4"},
         "semgrep": {"status": "not_found", "version": "unknown"},
-        "shellcheck": {"status": "broken", "version": "unknown"}
+        "shellcheck": {"status": "broken", "version": "unknown"},
     }
 
     # Setup installation success/failure

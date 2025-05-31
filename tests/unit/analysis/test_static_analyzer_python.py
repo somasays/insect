@@ -85,10 +85,7 @@ def test_eval_exec_detection(
     findings = analyzer.analyze_file(file_path)
 
     assert len(findings) >= 2
-    assert any(
-        "code execution" in finding.title.lower()
-        for finding in findings
-    )
+    assert any("code execution" in finding.title.lower() for finding in findings)
 
     # Clean up
     os.remove(file_path)
@@ -389,7 +386,9 @@ def test_ast_visitor(analyzer: PythonStaticAnalyzer, test_files_dir: Path) -> No
     os.remove(file_path)
 
 
-def test_confidence_threshold(test_config: Dict[str, Any], test_files_dir: Path) -> None:
+def test_confidence_threshold(
+    test_config: Dict[str, Any], test_files_dir: Path
+) -> None:
     """Test that the confidence threshold works."""
     # Set a high confidence threshold
     test_config["python_static_analyzer"]["min_confidence"] = 0.8

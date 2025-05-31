@@ -89,16 +89,38 @@ def test_analyze_file_with_cache(mock_analyzer, sample_finding, mock_cache):
         assert findings[0] == sample_finding
 
 
-@mock.patch("insect.core.ScanCache")
+@mock.patch("insect.analysis.dependency_manager.get_dependencies_status")
+@mock.patch("insect.utils.cache_utils.cache_enabled")
+@mock.patch("insect.utils.cache_utils.get_cache_dir")
+@mock.patch("insect.utils.cache_utils.ScanCache")
 @mock.patch("insect.core.create_analyzers")
 @mock.patch("insect.core.discover_files")
 @mock.patch("insect.core.analyze_file")
+@mock.patch("pathlib.Path.exists")
 def test_scan_repository_with_cache(
-    mock_analyze_file, mock_discover_files, mock_create_analyzers, mock_scan_cache_class
+    mock_path_exists,
+    mock_analyze_file,
+    mock_discover_files,
+    mock_create_analyzers,
+    mock_scan_cache_class,
+    mock_get_cache_dir,
+    mock_cache_enabled,
+    mock_get_dependencies_status,
 ):
     """Test scan_repository with caching enabled."""
     # Set up mocks
+    mock_path_exists.return_value = True
+    mock_cache_enabled.return_value = True
+    mock_get_cache_dir.return_value = Path("/tmp/cache")
+    mock_get_dependencies_status.return_value = {}
+
     mock_scan_cache = mock.MagicMock()
+    mock_scan_cache.clean_old_entries.return_value = 0
+    mock_scan_cache.get_cache_stats.return_value = {
+        "hits": 0,
+        "misses": 1,
+        "files_skipped": 0,
+    }
     mock_scan_cache_class.return_value = mock_scan_cache
 
     mock_analyzer = mock.MagicMock()
@@ -134,6 +156,8 @@ def test_scan_repository_with_cache(
         "patterns": {"include": ["*"], "exclude": []},
         "general": {"max_depth": 10},
         "severity": {"min_level": "low"},
+        "allowlist": {"findings": [], "patterns": []},
+        "confidence": {"min_level": 0.0},
     }
 
     # Call scan_repository
@@ -152,15 +176,28 @@ def test_scan_repository_with_cache(
     assert "cache_stats" in metadata
 
 
-@mock.patch("insect.core.ScanCache")
+@mock.patch("insect.analysis.dependency_manager.get_dependencies_status")
+@mock.patch("insect.utils.cache_utils.cache_enabled")
+@mock.patch("insect.utils.cache_utils.ScanCache")
 @mock.patch("insect.core.create_analyzers")
 @mock.patch("insect.core.discover_files")
 @mock.patch("insect.core.analyze_file")
+@mock.patch("pathlib.Path.exists")
 def test_scan_repository_without_cache(
-    mock_analyze_file, mock_discover_files, mock_create_analyzers, mock_scan_cache_class
+    mock_path_exists,
+    mock_analyze_file,
+    mock_discover_files,
+    mock_create_analyzers,
+    mock_scan_cache_class,
+    mock_cache_enabled,
+    mock_get_dependencies_status,
 ):
     """Test scan_repository with caching disabled."""
     # Set up mocks
+    mock_path_exists.return_value = True
+    mock_cache_enabled.return_value = False
+    mock_get_dependencies_status.return_value = {}
+
     mock_analyzer = mock.MagicMock()
     mock_analyzer.name = "mock_analyzer"
     mock_analyzer.supported_extensions = {".py"}
@@ -194,6 +231,8 @@ def test_scan_repository_without_cache(
         "patterns": {"include": ["*"], "exclude": []},
         "general": {"max_depth": 10},
         "severity": {"min_level": "low"},
+        "allowlist": {"findings": [], "patterns": []},
+        "confidence": {"min_level": 0.0},
     }
 
     # Call scan_repository

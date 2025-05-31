@@ -117,7 +117,9 @@ class Finding:
             location=location,
             analyzer=data.get("analyzer", ""),
             confidence=data.get("confidence", 1.0),
-            created_at=datetime.fromisoformat(data.get("created_at", datetime.now().isoformat())),
+            created_at=datetime.fromisoformat(
+                data.get("created_at", datetime.now().isoformat())
+            ),
             references=data.get("references", []),
             tags=data.get("tags", []),
             metadata=data.get("metadata", {}),

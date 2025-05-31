@@ -176,7 +176,7 @@ def format_eta(current: int, total: int, elapsed: float) -> str:
     Returns:
         Formatted ETA string.
     """
-    if current <= 0:
+    if current <= 0 or elapsed <= 0:
         return "ETA: calculating..."
 
     items_per_second = current / elapsed

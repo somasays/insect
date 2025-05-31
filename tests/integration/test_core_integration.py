@@ -178,6 +178,7 @@ def mock_analyzers():
 
         # Mock for create_analyzer_instance
         with patch("insect.analysis.create_analyzer_instance") as mock_create_analyzer:
+
             def side_effect(name, config):
                 if name == "mock_analyzer":
                     return MockAnalyzer(config)
@@ -202,9 +203,9 @@ def test_core_integration_analyzer_calls(test_repo, mock_config, mock_analyzers)
     assert len(findings) > 0
 
     # Look for findings from both analyzers
-    has_repo_finding = any(finding.id == 'MOCK-REPO-001' for finding in findings)
-    has_py_finding = any(finding.id.endswith('.py') for finding in findings)
-    has_js_finding = any(finding.id.endswith('.js') for finding in findings)
+    has_repo_finding = any(finding.id == "MOCK-REPO-001" for finding in findings)
+    has_py_finding = any(finding.id.endswith(".py") for finding in findings)
+    has_js_finding = any(finding.id.endswith(".js") for finding in findings)
 
     assert has_repo_finding, "No repository-level findings"
     assert has_py_finding, "No Python file findings"
@@ -226,8 +227,8 @@ def test_core_integration_file_filtering(test_repo, mock_config, mock_analyzers)
     findings, metadata = scan_repository(test_repo, mock_config)
 
     # Look for findings - should NOT have Python file findings
-    has_py_finding = any(finding.id.endswith('.py') for finding in findings)
-    has_js_finding = any(finding.id.endswith('.js') for finding in findings)
+    has_py_finding = any(finding.id.endswith(".py") for finding in findings)
+    has_js_finding = any(finding.id.endswith(".js") for finding in findings)
 
     assert not has_py_finding, "Found Python file findings despite exclude pattern"
     assert has_js_finding, "No JavaScript file findings"
@@ -242,13 +243,15 @@ def test_core_integration_finding_filtering(test_repo, mock_config, mock_analyze
     findings, metadata = scan_repository(test_repo, mock_config)
 
     # Verify only HIGH severity findings were included
-    assert all(finding.severity.value >= Severity.HIGH.value for finding in findings), \
-        "All findings should be HIGH severity or higher"
+    assert all(
+        finding.severity.value >= Severity.HIGH.value for finding in findings
+    ), "All findings should be HIGH severity or higher"
 
     # Verify metadata reflects the filtering
     if "severity_counts" in metadata:
-        assert metadata["severity_counts"].get("MEDIUM", 0) == 0, \
-            "Should have no MEDIUM severity findings"
+        assert (
+            metadata["severity_counts"].get("MEDIUM", 0) == 0
+        ), "Should have no MEDIUM severity findings"
 
 
 def test_analyze_file_function(test_repo, mock_config):
@@ -330,6 +333,7 @@ def test_filter_findings_function(mock_config):
 
 def test_core_integration_error_handling(test_repo, mock_config, mock_analyzers):
     """Test error handling during scanning."""
+
     # Create an analyzer that raises an exception
     class ErrorAnalyzer(BaseAnalyzer):
         name = "error_analyzer"
@@ -350,6 +354,7 @@ def test_core_integration_error_handling(test_repo, mock_config, mock_analyzers)
         }
 
         with patch("insect.analysis.create_analyzer_instance") as mock_create_analyzer:
+
             def side_effect(name, config):
                 if name == "error_analyzer":
                     return ErrorAnalyzer(config)
@@ -370,5 +375,9 @@ def test_core_integration_error_handling(test_repo, mock_config, mock_analyzers)
             findings, metadata = scan_repository(test_repo, config_with_error)
 
             # There should still be findings from mock_repo_analyzer
-            has_repo_findings = any(finding.analyzer == "mock_repo_analyzer" for finding in findings)
-            assert has_repo_findings, "Should still have repository-level findings despite errors"
+            has_repo_findings = any(
+                finding.analyzer == "mock_repo_analyzer" for finding in findings
+            )
+            assert (
+                has_repo_findings
+            ), "Should still have repository-level findings despite errors"
