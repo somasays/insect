@@ -186,12 +186,6 @@ def test_scan_repository(mock_config):
         assert "repository" in metadata
         assert metadata["file_count"] == 0
 
-        # Debug: print findings if any exist
-        if len(findings) > 0:
-            print(f"Unexpected findings: {len(findings)}")
-            for finding in findings:
-                print(f"  - {finding.title} (analyzer: {finding.analyzer})")
-
         assert metadata["finding_count"] == 0
 
         # Test with non-existent repository

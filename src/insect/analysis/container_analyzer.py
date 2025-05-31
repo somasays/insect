@@ -253,7 +253,7 @@ class ContainerAnalyzer(BaseAnalyzer):
     def _apply_pattern_rule(
         self,
         file_path: Path,
-        content: str,
+        content: str,  # noqa: ARG002
         lines: List[str],
         rule: ContainerSecurityRule,
     ) -> List[Finding]:  # noqa: ARG002
@@ -503,7 +503,7 @@ class ContainerAnalyzer(BaseAnalyzer):
     def _check_vulnerable_base_image(
         self,
         file_path: Path,
-        content: str,
+        content: str,  # noqa: ARG002
         lines: List[str],
         rule: ContainerSecurityRule,
     ) -> List[Finding]:  # noqa: ARG002
@@ -537,7 +537,7 @@ class ContainerAnalyzer(BaseAnalyzer):
     def _check_missing_healthcheck(
         self,
         file_path: Path,
-        content: str,
+        content: str,  # noqa: ARG002
         lines: List[str],
         rule: ContainerSecurityRule,
     ) -> List[Finding]:  # noqa: ARG002
@@ -563,7 +563,7 @@ class ContainerAnalyzer(BaseAnalyzer):
     def _check_sensitive_file_copy(
         self,
         file_path: Path,
-        content: str,
+        content: str,  # noqa: ARG002
         lines: List[str],
         rule: ContainerSecurityRule,
     ) -> List[Finding]:  # noqa: ARG002

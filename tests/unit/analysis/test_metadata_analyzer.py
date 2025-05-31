@@ -144,8 +144,8 @@ class TestMetadataAnalyzer(unittest.TestCase):
 
     @patch("insect.analysis.metadata_analyzer.git.Commit")
     def test_check_commit_message_sensitive_info(
-        self, mock_commit_class
-    ):  # noqa: ARG002
+        self, mock_commit_class  # noqa: ARG002
+    ):
         """Test detecting sensitive information in commit messages."""
         # Create analyzer
         analyzer = MetadataAnalyzer(self.config)

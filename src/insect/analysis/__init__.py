@@ -128,15 +128,13 @@ def create_analyzer_instance(
 
 
 # Import analyzers to register them - these imports are needed for side effects
-from . import (  # noqa: E402, I001
-    binary_analyzer,  # noqa: F401
-    container_analyzer,  # noqa: F401
-    javascript_static_analyzer,  # noqa: F401
-    metadata_analyzer,  # noqa: F401
-    python_static_analyzer,  # noqa: F401
-    secret_analyzer,  # noqa: F401
-    static_analyzer,  # noqa: F401
-    vulnerability_analyzer,  # noqa: F401
-)
+from . import binary_analyzer  # noqa: F401, E402
+from . import container_analyzer  # noqa: F401, E402
+from . import javascript_static_analyzer  # noqa: F401, E402
+from . import metadata_analyzer  # noqa: F401, E402
+from . import python_static_analyzer  # noqa: F401, E402
+from . import secret_analyzer  # noqa: F401, E402
+from . import static_analyzer  # noqa: F401, E402
+from . import vulnerability_analyzer  # noqa: F401, E402
 from .config import config_analyzer  # noqa: F401, E402
 from .shell import analyzer  # noqa: F401, E402

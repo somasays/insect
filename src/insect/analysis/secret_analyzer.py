@@ -674,8 +674,8 @@ class SecretAnalyzer(BaseAnalyzer):
         )
 
     def _calculate_entropy_severity(
-        self, candidate: str, entropy: float
-    ) -> Severity:  # noqa: ARG002
+        self, candidate: str, entropy: float  # noqa: ARG002
+    ) -> Severity:
         """Calculate severity based on entropy and string characteristics."""
         # High entropy thresholds
         if entropy >= 5.5:

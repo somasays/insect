@@ -1796,9 +1796,9 @@ class ConfigAnalyzer(BaseAnalyzer):
 
     def _analyze_cargo_toml(
         self,
-        file_path: Path,
-        toml_data: Dict,
-        content: str,
+        file_path: Path,  # noqa: ARG002
+        toml_data: Dict,  # noqa: ARG002
+        content: str,  # noqa: ARG002
         lines: List[str],  # noqa: ARG002
     ) -> List[Finding]:
         """Analyze a Cargo.toml file for security issues.
