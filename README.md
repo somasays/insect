@@ -122,6 +122,79 @@ Insect can detect a wide range of security issues, including:
 
 For examples of each type, see the [Security Examples](docs/security_examples.md) documentation.
 
+## Development
+
+Insect uses [tox](https://tox.readthedocs.io/) for managing development environments and running tests. The project uses [pipenv](https://pipenv.pypa.io/) for dependency management.
+
+### Setup
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/somasays/insect.git
+   cd insect
+   ```
+
+2. Install pipenv and dependencies:
+   ```bash
+   pip install pipenv
+   pipenv install --dev
+   ```
+
+### Available Tox Environments
+
+- **`tox -e all`** - Run all checks and tests (used in CI/CD)
+- **`tox -e lint`** - Run only linting checks (ruff, black, isort)
+- **`tox -e typecheck`** - Run only type checking (mypy)
+- **`tox -e test`** - Run only tests with coverage
+- **`tox -e dev`** - Quick development checks (lint + tests with fast failure)
+- **`tox -e format`** - Auto-format code (black, isort)
+
+### Development Workflow
+
+1. **Quick feedback during development:**
+   ```bash
+   pipenv run tox -e dev
+   ```
+
+2. **Format code:**
+   ```bash
+   pipenv run tox -e format
+   ```
+
+3. **Run full test suite before committing:**
+   ```bash
+   pipenv run tox -e all
+   ```
+
+4. **Run specific tests:**
+   ```bash
+   pipenv run tox -e test -- tests/unit/test_specific.py
+   ```
+
+### Manual Commands (if needed)
+
+If you prefer to run individual commands:
+
+```bash
+# Install dependencies
+pipenv install --dev
+
+# Run tests
+pipenv run pytest tests/ --cov=insect
+
+# Run linting
+pipenv run ruff check src tests
+pipenv run black --check src tests
+pipenv run isort --check-only src tests
+
+# Type checking
+pipenv run mypy src tests
+
+# Format code
+pipenv run black src tests
+pipenv run isort src tests
+```
+
 ## License
 
 MIT
