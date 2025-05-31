@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "insect"
-version = "0.1.1"
+version = "0.1.2"
 description = "Security-focused command line tool to scan Git repositories for potentially malicious code patterns"
 readme = "README.md"
 requires-python = ">=3.13"
