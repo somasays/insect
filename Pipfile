@@ -23,9 +23,10 @@ isort = ">=5.0.0"
 mypy = ">=1.0.0"
 ruff = ">=0.0.230"
 pre-commit = ">=3.0.0"
-tox = ">=4.0.0"
 toml = "*"
 types-toml = "*"
+tox = "*"
+types-pyyaml = "*"
 
 [requires]
 python_version = "3.13"

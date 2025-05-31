@@ -27,20 +27,8 @@ jobs:
         pip install pipenv
         pipenv install --dev
 
-    - name: Lint with ruff
-      run: pipenv run ruff check src tests --ignore=E501,S603,S607,S108,S103,S105,S310,S311,S605,I001
-
-    - name: Type check with mypy
-      run: pipenv run mypy src tests
-
-    - name: Format check with black
-      run: pipenv run black --check src tests
-
-    - name: Import order check with isort
-      run: pipenv run isort --check-only src tests
-
-    - name: Run tests with pytest
-      run: pipenv run pytest --cov=insect tests/ --cov-report=xml
+    - name: Run all checks and tests with tox
+      run: pipenv run tox -e all
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

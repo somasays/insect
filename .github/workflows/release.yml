@@ -22,14 +22,8 @@ jobs:
         pip install pipenv
         pipenv install --dev
 
-    - name: Run tests
-      run: pipenv run pytest --cov=insect tests/
-
-    - name: Lint
-      run: pipenv run ruff check src tests --ignore=E501,S603,S607,S108,S103,S105,S310,S311,S605
-
-    - name: Type check
-      run: pipenv run mypy src tests
+    - name: Run all checks and tests with tox
+      run: pipenv run tox -e all
 
   release:
     needs: test
