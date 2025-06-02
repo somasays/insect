@@ -1,6 +1,6 @@
 <div align="center">
 
-![Insect Logo](./assets/images/insect-logo.png)
+<img src="./assets/images/insect-logo.png" alt="Insect Logo" width="150" height="150">
 
 # Insect Security Scanner
 
