@@ -59,6 +59,10 @@ class MetadataAnalyzer(BaseAnalyzer):
         self.analyzer_config = config.get(self.name, {})
         self.min_confidence = self.analyzer_config.get("min_confidence", 0.0)
 
+        # Get sensitivity level from configuration
+        sensitivity_config = config.get("sensitivity", {})
+        self.sensitivity_level = sensitivity_config.get("level", "normal")
+
         # Configure specific analyzers
         self.check_commits = self.analyzer_config.get("check_commits", True)
         self.check_contributors = self.analyzer_config.get("check_contributors", True)
@@ -83,6 +87,50 @@ class MetadataAnalyzer(BaseAnalyzer):
 
         # Git repository handle (initialized when needed)
         self.repo: Optional[Repo] = None
+
+    def _should_include_finding(self, finding_type: str) -> bool:
+        """
+        Check if a finding type should be included based on sensitivity level.
+
+        Args:
+            finding_type: Type of finding to check
+
+        Returns:
+            True if the finding should be included
+        """
+        sensitivity_map = {
+            "low": ["critical_secrets", "obvious_malware"],
+            "normal": [
+                "critical_secrets",
+                "obvious_malware",
+                "sensitive_commits",
+                "large_binaries",
+            ],
+            "high": [
+                "critical_secrets",
+                "obvious_malware",
+                "sensitive_commits",
+                "large_binaries",
+                "large_commits",
+                "stale_branches",
+            ],
+            "very_high": [
+                "critical_secrets",
+                "obvious_malware",
+                "sensitive_commits",
+                "large_binaries",
+                "large_commits",
+                "stale_branches",
+                "unusual_hours",
+                "one_time_contributors",
+                "suspicious_branches",
+            ],
+        }
+
+        allowed_types = sensitivity_map.get(
+            self.sensitivity_level, sensitivity_map["normal"]
+        )
+        return finding_type in allowed_types
 
     def analyze_file(self, file_path: Path) -> List[Finding]:
         """
@@ -305,7 +353,7 @@ class MetadataAnalyzer(BaseAnalyzer):
                     self.night_start_hour <= commit_time.hour < self.night_end_hour
                 )
 
-            if is_night:
+            if is_night and self._should_include_finding("unusual_hours"):
                 findings.append(
                     Finding(
                         id=str(uuid.uuid4()),
@@ -367,7 +415,11 @@ class MetadataAnalyzer(BaseAnalyzer):
             diffs = parent.diff(commit)
 
             # Check if the commit modifies too many files
-            if len(diffs) > self.large_commit_threshold:
+            if len(
+                diffs
+            ) > self.large_commit_threshold and self._should_include_finding(
+                "large_commits"
+            ):
                 findings.append(
                     Finding(
                         id=str(uuid.uuid4()),
@@ -434,7 +486,10 @@ class MetadataAnalyzer(BaseAnalyzer):
                     continue
 
                 # Check if it's a binary file and exceeds size threshold
-                if diff.b_blob.size > self.large_binary_threshold:
+                if (
+                    diff.b_blob.size > self.large_binary_threshold
+                    and self._should_include_finding("large_binaries")
+                ):
                     # Get the file path
                     file_path = diff.b_path if diff.b_path else "unknown"
 
@@ -508,7 +563,9 @@ class MetadataAnalyzer(BaseAnalyzer):
                 (author, count) for author, count in authors.items() if count == 1
             ]
 
-            if one_time_contributors:
+            if one_time_contributors and self._should_include_finding(
+                "one_time_contributors"
+            ):
                 # Find which commits these contributors made
                 one_time_commits = {}
                 for commit in commits:
@@ -592,7 +649,9 @@ class MetadataAnalyzer(BaseAnalyzer):
                         suspicious_branches.append(branch.name)
                         break
 
-            if suspicious_branches:
+            if suspicious_branches and self._should_include_finding(
+                "suspicious_branches"
+            ):
                 findings.append(
                     Finding(
                         id=str(uuid.uuid4()),
@@ -647,7 +706,7 @@ class MetadataAnalyzer(BaseAnalyzer):
                     # Skip branches with no commits
                     continue
 
-            if stale_branches:
+            if stale_branches and self._should_include_finding("stale_branches"):
                 findings.append(
                     Finding(
                         id=str(uuid.uuid4()),

@@ -1,3 +1,7 @@
+<div align="center">
+
+![Insect Logo](./assets/images/insect-logo.png)
+
 # Insect Security Scanner
 
 [![PyPI version](https://badge.fury.io/py/insect.svg)](https://badge.fury.io/py/insect)
@@ -6,17 +10,22 @@
 [![CI/CD Status](https://github.com/somasays/insect/workflows/Test/badge.svg)](https://github.com/somasays/insect/actions)
 [![Release Status](https://github.com/somasays/insect/workflows/Release/badge.svg)](https://github.com/somasays/insect/actions)
 
-Insect is a security-focused command line tool designed to scan Git repositories for potentially malicious code patterns before execution. It uses a combination of static analysis, configuration checks, and metadata examination to identify security risks in code.
+</div>
 
-## Features
+**Insect** is a security-focused command line tool designed to scan Git repositories for potentially malicious code patterns before execution. It uses a combination of static analysis, configuration checks, and metadata examination to identify security risks in code.
 
-- **Multi-language support**: Python, JavaScript, and Shell scripts
-- **Deep static analysis**: Detects suspicious patterns and security vulnerabilities
-- **External tool integration**: Works with Bandit, Semgrep, and ShellCheck
-- **Detailed reporting**: Text, JSON, and interactive HTML outputs
-- **Performance optimization**: Caching for faster re-scanning
-- **Flexible configuration**: Customize analysis based on project needs
-- **Containerized scanning**: Safe scanning of untrusted repositories in Docker containers
+> 🎉 **Now in Beta!** v0.1.5 brings a beautiful, responsive CLI interface with enhanced configurability.
+
+## ✨ Features
+
+- **🎨 Beautiful CLI Interface**: Rich, colorful, responsive design that adapts to any terminal size
+- **🔍 Multi-language Support**: Python, JavaScript, Shell scripts, and more
+- **🛡️ Deep Static Analysis**: Detects suspicious patterns and security vulnerabilities
+- **🔧 External Tool Integration**: Works with Bandit, Semgrep, ShellCheck, and other security tools
+- **📊 Detailed Reporting**: Text, JSON, and interactive HTML outputs with professional styling
+- **⚡ Performance Optimization**: Smart caching for faster re-scanning
+- **🎛️ Flexible Configuration**: Customize analysis sensitivity and rules based on project needs
+- **🐳 Containerized Scanning**: Safe analysis of untrusted repositories in Docker containers
 
 ## Installation
 
@@ -30,12 +39,32 @@ Or using pipenv:
 pipenv install insect
 ```
 
-## Quick Start
+## 🚀 Quick Start
 
-Scan a Git repository and display findings:
-
+### Basic Scanning
 ```bash
-insect scan /path/to/repository
+# Scan current directory with beautiful UI
+insect scan .
+
+# Scan with high sensitivity for comprehensive analysis
+insect scan . --sensitivity high
+
+# Generate HTML report with detailed findings
+insect scan . --format html --output security-report.html
+```
+
+### New in v0.1.5: Responsive CLI
+The CLI automatically adapts to your terminal size:
+- **Wide terminals**: Rich side-by-side layout with detailed information
+- **Narrow terminals**: Stacked layout with smart text truncation
+- **Progress bars**: Dynamic width adjustment for optimal viewing
+
+### Sensitivity Levels
+```bash
+insect scan . --sensitivity low        # Only obvious security threats
+insect scan . --sensitivity normal     # Standard detection (default)  
+insect scan . --sensitivity high       # Include speculative findings
+insect scan . --sensitivity very_high  # All patterns (unusual commits, etc.)
 ```
 
 Check status of external dependencies:

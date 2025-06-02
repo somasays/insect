@@ -41,6 +41,7 @@ def test_main_exit_code() -> None:
                 "format": "text",
                 "config": None,
                 "severity": "low",
+                "sensitivity": "normal",  # Add new parameter
                 "include_pattern": None,
                 "exclude_pattern": None,
                 "disable": None,

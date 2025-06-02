@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "insect"
-version = "0.1.4"
+version = "0.1.5"
 description = "Security-focused command line tool to scan Git repositories for potentially malicious code patterns"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -15,7 +15,7 @@ authors = [
 keywords = ["security", "static-analysis", "git", "vulnerability-scanner", "malware-detection"]
 urls = {Homepage = "https://github.com/somasays/insect", Repository = "https://github.com/somasays/insect", Documentation = "https://github.com/somasays/insect#readme"}
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",

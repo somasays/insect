@@ -1,8 +1,8 @@
 # Site configuration for Insect Security Scanner Documentation
 title: Insect Security Scanner
 description: A security-focused CLI tool designed to scan Git repositories for potentially malicious code patterns before execution.
-url: ""
-baseurl: ""
+url: "https://somasays.github.io"
+baseurl: "/insect"
 
 # Build settings
 markdown: kramdown
@@ -71,7 +71,7 @@ twitter:
   username: 
   card: summary
 
-logo: /assets/images/insect-logo.png
+logo: assets/images/insect-logo.png
 
 # Google Analytics (optional)
 # google_analytics: UA-XXXXXXXX-X

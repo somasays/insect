@@ -33,6 +33,14 @@ exclude = [
 [severity]
 min_level = "low"  # Options: low, medium, high, critical
 
+# Sensitivity settings for metadata analysis
+[sensitivity]
+level = "normal"  # Options: low, normal, high, very_high
+# low: Only obvious security issues
+# normal: Standard security checks (default)
+# high: Include more speculative findings
+# very_high: Include all potential security-related patterns
+
 # Allowlist settings
 [allowlist]
 files = []

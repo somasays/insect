@@ -1,7 +1,6 @@
 """Tests for the CLI argument parsing."""
 
 import argparse
-import logging
 from pathlib import Path
 from unittest.mock import patch
 
@@ -97,6 +96,7 @@ class TestCLIArgumentParsing:
         assert args.output is None
         assert args.config is None
         assert args.severity == "low"
+        assert args.sensitivity == "normal"  # New default
         assert args.include_pattern is None
         assert args.exclude_pattern is None
         assert args.disable is None
@@ -104,19 +104,18 @@ class TestCLIArgumentParsing:
         assert args.no_secrets is False
 
     def test_verbosity_levels(self):
-        """Test that verbosity levels are set correctly."""
-        with patch("insect.cli.logger") as mock_logger:
-            # Default verbosity (warning)
-            parse_args(["scan", "/path/to/repo"])
-            mock_logger.setLevel.assert_called_with(logging.WARNING)
+        """Test that verbosity levels are parsed correctly."""
+        # Default verbosity (0)
+        args = parse_args(["scan", "/path/to/repo"])
+        assert args.verbose == 0
 
-            # Info verbosity
-            parse_args(["scan", "/path/to/repo", "-v"])
-            mock_logger.setLevel.assert_called_with(logging.INFO)
+        # Info verbosity (-v)
+        args = parse_args(["scan", "/path/to/repo", "-v"])
+        assert args.verbose == 1
 
-            # Debug verbosity
-            parse_args(["scan", "/path/to/repo", "-vv"])
-            mock_logger.setLevel.assert_called_with(logging.DEBUG)
+        # Debug verbosity (-vv)
+        args = parse_args(["scan", "/path/to/repo", "-vv"])
+        assert args.verbose == 2
 
 
 class TestCLIMain:
@@ -152,6 +151,7 @@ class TestCLIMain:
                 format="text",
                 config=None,
                 severity="low",
+                sensitivity="normal",  # Add new parameter
                 include_pattern=None,
                 exclude_pattern=None,
                 disable=None,

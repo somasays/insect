@@ -29,6 +29,7 @@ class TestMetadataAnalyzer(unittest.TestCase):
         # Basic configuration for testing
         self.config = {
             "analyzers": {"metadata": True},
+            "sensitivity": {"level": "very_high"},  # Enable all findings for tests
             "metadata": {
                 "min_confidence": 0.0,
                 "check_commits": True,
