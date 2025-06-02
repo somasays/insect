@@ -14,6 +14,8 @@ jinja2 = "*"
 requests = ">=2.25.0"
 packaging = ">=21.0"
 pyyaml = ">=6.0"
+tabulate = "*"
+textual = "*"
 
 [dev-packages]
 pytest = ">=7.0.0"

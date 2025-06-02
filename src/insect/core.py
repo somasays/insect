@@ -314,6 +314,7 @@ def create_scan_metadata(
     start_time: float,
     config: Dict[str, Any],
     enabled_analyzers: Set[str],
+    total_files_processed: int = 0,
 ) -> Dict[str, Any]:
     """Create metadata about the scan.
 
@@ -377,6 +378,7 @@ def create_scan_metadata(
         "timestamp": datetime.now().isoformat(),
         "duration_seconds": duration,
         "file_count": len(files),
+        "total_files_processed": total_files_processed,
         "finding_count": len(findings),
         "enabled_analyzers": list(enabled_analyzers),
         "extension_stats": extension_stats,
@@ -445,6 +447,9 @@ def scan_repository(
     # Discover files
     files = discover_files(repo_path, config)
     logger.info(f"Discovered {len(files)} files to scan")
+    
+    # Count total files that will be processed by analyzers
+    total_files_to_process = sum(len(file_list) for file_list in analyzer_file_map.values()) if 'analyzer_file_map' in locals() else len(files)
 
     # Get file extension statistics for reporting
     extension_stats = get_file_extension_stats(files)
@@ -656,7 +661,7 @@ def scan_repository(
 
     # Create scan metadata
     metadata = create_scan_metadata(
-        repo_path, files, filtered_findings, start_time, config, used_analyzers
+        repo_path, files, filtered_findings, start_time, config, used_analyzers, total_files
     )
 
     # Add cache stats to metadata if available

@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional
 
 from rich import box
 from rich.align import Align
-from rich.columns import Columns
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
@@ -24,9 +23,8 @@ from rich.progress import (
 )
 from rich.prompt import Confirm
 from rich.rule import Rule
-from rich.table import Column, Table
 from rich.text import Text
-from rich.tree import Tree
+from tabulate import tabulate
 
 from insect import __version__, core
 from insect.config import handler
@@ -58,8 +56,11 @@ if console_handler:
         logging.ERROR
     )  # Only show errors on console to keep UI clean
 
-# Setup Rich console
-console = Console()
+# Setup Rich console for basic text output
+console = Console(width=None, force_terminal=True, legacy_windows=False)
+
+# Global flag to track if the welcome screen has been shown
+_welcome_screen_shown = False
 
 # ASCII Art for the welcome screen
 INSECT_ASCII = """
@@ -83,57 +84,9 @@ SECURITY_ICONS = {
 
 
 def show_welcome_screen():
-    """Display a fancy animated welcome screen."""
-    console.clear()
-
-    # Create gradient text for INSECT
-    insect_text = Text()
-    colors = ["red", "orange3", "yellow", "green", "blue", "purple"]
-
-    for i, line in enumerate(INSECT_ASCII.split("\n")):
-        if line.strip():
-            color = colors[i % len(colors)]
-            insect_text.append(line + "\n", style=f"bold {color}")
-
-    # Create the main panel
-    welcome_panel = Panel(
-        Align.center(
-            Text.assemble(
-                insect_text,
-                "\n",
-                (
-                    f"{SECURITY_ICONS['shield']} Security Scanner for Git Repositories {SECURITY_ICONS['shield']}",
-                    "bold cyan",
-                ),
-                "\n",
-                (f"Version {__version__}", "dim"),
-                "\n\n",
-                (
-                    f"{SECURITY_ICONS['scan']} Ready to scan for vulnerabilities and malware",
-                    "green",
-                ),
-            )
-        ),
-        title=f"{SECURITY_ICONS['fire']} Welcome to INSECT {SECURITY_ICONS['fire']}",
-        border_style="bright_blue",
-        box=box.DOUBLE,
-    )
-
-    with Live(welcome_panel, console=console, refresh_per_second=10) as live:
-        # Animate the welcome screen
-        for i in range(3):
-            time.sleep(0.5)
-            # Add some visual flair
-            if i == 1:
-                welcome_panel.title = f"{SECURITY_ICONS['alert']} Welcome to INSECT {SECURITY_ICONS['alert']}"
-                welcome_panel.border_style = "bright_red"
-            elif i == 2:
-                welcome_panel.title = f"{SECURITY_ICONS['check']} Welcome to INSECT {SECURITY_ICONS['check']}"
-                welcome_panel.border_style = "bright_green"
-            live.update(welcome_panel)
-
-    time.sleep(0.5)
-    console.print(Rule(style="dim"))
+    """Display a minimal welcome message."""
+    # Simple, clean banner following CLI best practices
+    console.print(f"[bold cyan]INSECT[/bold cyan] [dim]v{__version__}[/dim] - Security Scanner")
 
 
 def create_fancy_progress(description: str):
@@ -158,156 +111,82 @@ def create_fancy_progress(description: str):
 
 
 def display_scan_summary(metadata: Dict[str, Any]):
-    """Display a fancy summary of scan results."""
-    terminal_width = console.size.width
-
-    # Create summary table with responsive sizing
-    summary_table = Table(show_header=False, box=box.ROUNDED, border_style="cyan")
-    summary_table.add_column("Metric", style="bold", ratio=1)
-    summary_table.add_column("Value", style="bold green", ratio=1, justify="right")
-
-    # Truncate repository path if it's too long
-    repo_path = str(metadata.get("repository", "N/A"))
-    if len(repo_path) > 30:
-        repo_path = "..." + repo_path[-27:]
-
-    summary_table.add_row(f"{SECURITY_ICONS['scan']} Repository", repo_path)
-    summary_table.add_row(
-        f"{SECURITY_ICONS['check']} Files Scanned", str(metadata.get("file_count", 0))
-    )
-    summary_table.add_row(
-        f"{SECURITY_ICONS['bug']} Issues Found", str(metadata.get("finding_count", 0))
-    )
-    summary_table.add_row("⏱️ Duration", f"{metadata.get('duration_seconds', 0):.2f}s")
-
-    # Create severity breakdown
+    """Display essential scan results in a clean, minimal format."""
+    # Essential stats only
+    duration = metadata.get('duration_seconds', 0)
+    file_count = metadata.get('file_count', 0)
     severity_counts = metadata.get("severity_counts", {})
-    severity_table = Table(
-        title=f"{SECURITY_ICONS['alert']} Issues by Severity",
-        box=box.SIMPLE,
-        border_style="yellow",
-    )
-    severity_table.add_column("Severity", style="bold", ratio=2)
-    severity_table.add_column("Count", style="bold", justify="right", ratio=1)
-    severity_table.add_column("Icon", justify="center", ratio=1)
-
-    severity_styles = {
-        "critical": ("bold red", SECURITY_ICONS["fire"]),
-        "high": ("red", SECURITY_ICONS["alert"]),
-        "medium": ("yellow", SECURITY_ICONS["warning"]),
-        "low": ("blue", SECURITY_ICONS["bug"]),
-    }
-
-    for severity, count in severity_counts.items():
-        if count > 0:
-            style, icon = severity_styles.get(severity, ("white", "•"))
-            severity_table.add_row(severity.title(), str(count), icon, style=style)
-
-    # Responsive layout: stack tables on narrow terminals
-    console.print("\n")
-    if terminal_width < 80:
-        # Stack tables vertically for narrow terminals
-        console.print(summary_table)
-        console.print("\n")
-        console.print(severity_table)
-    else:
-        # Side by side layout for wider terminals
-        console.print(Columns([summary_table, severity_table], equal=True, expand=True))
-    console.print("\n")
+    total_issues = sum(severity_counts.values())
+    
+    # Critical stats on one line
+    critical = severity_counts.get('critical', 0)
+    high = severity_counts.get('high', 0)
+    urgent = critical + high
+    
+    # Single line summary following CLI best practices
+    status = "[green]✓[/green]" if urgent == 0 else "[red]⚠[/red]"
+    console.print(f"\n{status} [bold]{file_count}[/bold] files • [bold]{total_issues}[/bold] issues • {duration:.1f}s")
+    
+    if urgent > 0:
+        console.print(f"[red]  {critical} critical, {high} high priority[/red]")
+    elif total_issues > 0:
+        medium = severity_counts.get('medium', 0)
+        low = severity_counts.get('low', 0)
+        console.print(f"[yellow]  {medium} medium, {low} low priority[/yellow]")
 
 
-def display_findings_tree(findings: List[Any], max_display: int = 10):
-    """Display findings in a fancy tree structure."""
-    terminal_width = console.size.width
-
+def display_findings_summary(findings: List[Any], metadata: Dict[str, Any]):
+    """Display findings in a focused, scannable format."""
     if not findings:
-        console.print(
-            Panel(
-                Align.center(f"{SECURITY_ICONS['check']} No security issues found!"),
-                title="Results",
-                border_style="green",
-            )
-        )
+        console.print(f"\n[green]✓ No security issues found[/green]")
         return
+    
+    # Focus on urgent issues first (CLI best practice: show most important info first)
+    urgent_issues = [f for f in findings if hasattr(f, 'severity') and f.severity.value in ['critical', 'high']]
+    
+    if urgent_issues:
+        console.print(f"\n[bold red]⚠ {len(urgent_issues)} urgent issues require attention:[/bold red]")
+        
+        # Show only top 5 most critical in simplified format
+        for i, finding in enumerate(urgent_issues[:5], 1):
+            severity_color = "red" if finding.severity.value == "critical" else "yellow"
+            # Simplified one-line format
+            file_name = finding.location.path.name if hasattr(finding.location, 'path') else "unknown"
+            console.print(f"  [{severity_color}]{i}. {finding.severity.value.upper()}[/{severity_color}] {finding.title[:60]}")
+            console.print(f"     [dim]in {file_name}[/dim]")
+        
+        if len(urgent_issues) > 5:
+            console.print(f"     [dim]... and {len(urgent_issues) - 5} more urgent issues[/dim]")
+    
+    # Show summary of remaining issues
+    severity_counts = metadata.get("severity_counts", {})
+    medium = severity_counts.get('medium', 0)
+    low = severity_counts.get('low', 0)
+    
+    if medium > 0 or low > 0:
+        console.print(f"\n[dim]Additional issues: {medium} medium, {low} low priority[/dim]")
 
-    tree = Tree(f"{SECURITY_ICONS['bug']} Security Issues Found", style="bold red")
+def display_next_steps(findings: List[Any], metadata: Dict[str, Any]):
+    """Display concise, actionable next steps."""
+    severity_counts = metadata.get("severity_counts", {})
+    
+    console.print(f"\n[bold]Next steps:[/bold]")
+    
+    # Count urgent issues from actual findings (more reliable than metadata)
+    urgent_count = len([f for f in findings if hasattr(f, 'severity') and f.severity.value in ['critical', 'high']])
+    critical_count = len([f for f in findings if hasattr(f, 'severity') and f.severity.value == 'critical'])
+    
+    if critical_count > 0:
+        console.print(f"[red]• Address {critical_count} critical vulnerabilities immediately[/red]")
+    elif urgent_count > 0:
+        console.print(f"[yellow]• Review {urgent_count} high-priority issues[/yellow]")
+    else:
+        console.print("[green]• No urgent action required[/green]")
+    
+    # Show one key command for more details
+    console.print("[dim]• Run with[/dim] [cyan]--format html[/cyan] [dim]for detailed report[/dim]")
 
-    # Group findings by severity
-    severity_groups: Dict[str, List[Any]] = {}
-    for finding in findings[:max_display]:
-        if isinstance(finding, dict):
-            severity = finding.get("severity", "low")
-        else:
-            severity = finding.severity.value
 
-        if severity not in severity_groups:
-            severity_groups[severity] = []
-        severity_groups[severity].append(finding)
-
-    # Add branches for each severity
-    severity_order = ["critical", "high", "medium", "low"]
-    severity_styles = {
-        "critical": "bold red",
-        "high": "red",
-        "medium": "yellow",
-        "low": "blue",
-    }
-
-    for severity in severity_order:
-        if severity in severity_groups:
-            count = len(severity_groups[severity])
-            icon = SECURITY_ICONS.get(
-                (
-                    "fire"
-                    if severity == "critical"
-                    else (
-                        "alert"
-                        if severity == "high"
-                        else "warning" if severity == "medium" else "bug"
-                    )
-                ),
-                "•",
-            )
-            branch = tree.add(
-                f"{icon} {severity.title()} ({count})",
-                style=severity_styles.get(severity, "white"),
-            )
-
-            # Adjust display count based on terminal width
-            findings_to_show = min(
-                5 if terminal_width > 100 else 3, len(severity_groups[severity])
-            )
-
-            for finding in severity_groups[severity][:findings_to_show]:
-                if isinstance(finding, dict):
-                    title = finding.get("title", "Unknown issue")
-                    location = finding.get("location", "Unknown location")
-                else:
-                    title = finding.title
-                    location = str(finding.location)
-
-                # Truncate long titles and locations for narrow terminals
-                if terminal_width < 80:
-                    if len(title) > 50:
-                        title = title[:47] + "..."
-                    if len(location) > 60:
-                        location = "..." + location[-57:]
-                elif terminal_width < 120:
-                    if len(title) > 70:
-                        title = title[:67] + "..."
-                    if len(location) > 80:
-                        location = "..." + location[-77:]
-
-                finding_text = f"{title}\n{location}"
-                branch.add(finding_text, style="dim")
-
-    console.print(tree)
-
-    if len(findings) > max_display:
-        console.print(f"\n[dim]... and {len(findings) - max_display} more issues[/dim]")
-        console.print(
-            "[dim]Use --output and --format options for a complete report[/dim]"
-        )
 
 
 def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
@@ -527,6 +406,20 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
         help="Attempt to install missing dependencies automatically",
     )
 
+    # Dashboard option
+    scan_parser.add_argument(
+        "--dashboard",
+        action="store_true",
+        default=True,
+        help="Show interactive dashboard (default)",
+    )
+
+    scan_parser.add_argument(
+        "--no-dashboard",
+        action="store_true",
+        help="Disable dashboard and show simple text output",
+    )
+
     # Parse arguments
     parsed_args = parser.parse_args(args)
 
@@ -565,10 +458,12 @@ def main(args: Optional[List[str]] = None) -> int:
     Returns:
         Exit code.
     """
+    global _welcome_screen_shown  # Declare intent to modify global variable
     try:
-        # Show welcome screen for interactive usage
-        if not args and len(sys.argv) > 1:
+        # Show welcome screen for interactive usage, only once per session
+        if not args and len(sys.argv) > 1 and not _welcome_screen_shown:
             show_welcome_screen()
+            _welcome_screen_shown = True
 
         parsed_args = parse_args(args)
         logger.debug(f"Parsed arguments: {parsed_args}")
@@ -849,9 +744,7 @@ def main(args: Optional[List[str]] = None) -> int:
 
         elif parsed_args.command == "scan":
             logger.info(f"Scanning repository: {parsed_args.repo_path}")
-            console.print(
-                f"[bold green]{SECURITY_ICONS['scan']} Repository to scan:[/bold green] [cyan]{parsed_args.repo_path}[/cyan]"
-            )
+            console.print(f"\\n[bold]Scanning:[/bold] [cyan]{parsed_args.repo_path}[/cyan]")
 
             # Load config from file if specified, or use default
             config_path = parsed_args.config
@@ -914,22 +807,24 @@ def main(args: Optional[List[str]] = None) -> int:
                 config, disabled_analyzers
             )
 
-            # Run the scan with fancy progress bar
-            with create_fancy_progress(
-                f"{SECURITY_ICONS['scan']} Scanning repository"
-            ) as progress:
-                task = progress.add_task("Scanning files...", total=100)
+            # Determine if progress should be shown overall (respects --no-progress via config)
+            should_show_progress_overall = config.get("progress", {}).get("enabled", True)
 
-                # Start the scan
-                scan_findings, metadata = core.scan_repository(
-                    Path(parsed_args.repo_path),
-                    config,
-                    enabled_analyzers=enabled_analyzers,
+            if should_show_progress_overall:
+                console.print(
+                    f"[bold cyan]{SECURITY_ICONS['scan']} Scanning repository. Detailed progress may follow...[/bold cyan]"
                 )
-                findings_list = scan_findings  # Use scan findings
 
-                # Complete progress
-                progress.update(task, completed=100)
+            # Start the scan
+            # core.scan_repository is expected to show its own detailed progress bar
+            # if config["progress"]["enabled"] is True, and not if False.
+            # The create_fancy_progress wrapper has been removed from here.
+            scan_findings, metadata = core.scan_repository(
+                Path(parsed_args.repo_path),
+                config,
+                enabled_analyzers=enabled_analyzers,
+            )
+            findings_list = scan_findings  # Use scan findings
 
             # Display scan results
             if not metadata:  # Check if metadata is empty (scan failed)
@@ -958,59 +853,29 @@ def main(args: Optional[List[str]] = None) -> int:
                         f"\n[bold green]{SECURITY_ICONS['check']} Report written to:[/bold green] {output_file}"
                     )
                 else:
-                    # If format is text and no output file specified, use Rich for interactive output
+                    # If format is text and no output file specified, show dashboard or simple output
                     if output_format == "text":
-                        # Display fancy summary
-                        display_scan_summary(metadata)
-
-                        console.print(
-                            f"\n[bold green]{SECURITY_ICONS['check']} Scan Completed[/bold green] in [bold cyan]{metadata['duration_seconds']:.2f}s[/bold cyan]"
-                        )
-
-                        # Show cache statistics if available
-                        if "cache_stats" in metadata:
-                            cache_stats = metadata["cache_stats"]
-                            cache_table = Table(
-                                title=f"{SECURITY_ICONS['key']} Cache Statistics",
-                                box=box.ROUNDED,
-                                border_style="blue",
-                                width=min(
-                                    50, console.size.width - 10
-                                ),  # Responsive width
-                            )
-                            cache_table.add_column("Metric", style="bold blue", ratio=2)
-                            cache_table.add_column(
-                                "Value", style="bold green", justify="right", ratio=1
-                            )
-
-                            cache_table.add_row("Cache hits", str(cache_stats["hits"]))
-                            cache_table.add_row(
-                                "Cache misses", str(cache_stats["misses"])
-                            )
-
-                            if cache_stats["hits"] > 0:
-                                hit_percentage = (
-                                    cache_stats["hits"]
-                                    / (cache_stats["hits"] + cache_stats["misses"])
-                                ) * 100
-                                cache_table.add_row(
-                                    "Hit ratio", f"{hit_percentage:.1f}%"
-                                )
-
-                            console.print(cache_table)
-
-                        # Display findings using the fancy tree view
-
-                        # Display detailed findings using the fancy tree view
                         findings_to_show: Any = (
                             findings_list if "findings_list" in locals() else findings
                         )
-                        display_findings_tree(findings_to_show)
+                        
+                        if parsed_args.no_dashboard:
+                            # Simple text output
+                            display_scan_summary(metadata)
+                            display_findings_summary(findings_to_show, metadata)
+                            display_next_steps(findings_to_show, metadata)
+                            console.print() # Clean ending
+                        else:
+                            # Show comprehensive interactive dashboard
+                            from insect.dashboard import show_dashboard
+                            show_dashboard(findings_to_show, metadata)
                     else:
                         # For other formats without output file, print to stdout
-                        report = formatter.format_findings(
+                        report_content = formatter.format_findings(
                             findings_for_formatter, metadata
                         )
+                        if report_content: # Ensure there's something to print
+                            console.print(report_content)
 
             except Exception as e:
                 logger.error(f"Error generating report: {e}", exc_info=True)
