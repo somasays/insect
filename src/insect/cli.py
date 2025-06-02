@@ -321,7 +321,7 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
     scan_parser.add_argument(
         "--format",
         "-f",
-        choices=["text", "json", "html"],
+        choices=["text", "json", "html", "dashboard-html"],
         default="text",
         help="Output format (default: text)",
     )

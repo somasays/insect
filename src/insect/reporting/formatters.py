@@ -67,7 +67,7 @@ def create_formatter(format_name: str, config: Dict[str, Any]) -> BaseFormatter:
     """Create a formatter instance based on format name.
 
     Args:
-        format_name: Name of the format ("text", "json", "html").
+        format_name: Name of the format ("text", "json", "html", "dashboard-html").
         config: Configuration dictionary.
 
     Returns:
@@ -79,11 +79,13 @@ def create_formatter(format_name: str, config: Dict[str, Any]) -> BaseFormatter:
     from insect.reporting.html_formatter import HtmlFormatter
     from insect.reporting.json_formatter import JsonFormatter
     from insect.reporting.text_formatter import TextFormatter
+    from insect.reporting.dashboard_html_formatter import DashboardHtmlFormatter
 
     formatters = {
         "text": TextFormatter,
         "json": JsonFormatter,
         "html": HtmlFormatter,
+        "dashboard-html": DashboardHtmlFormatter,
     }
 
     if format_name not in formatters:

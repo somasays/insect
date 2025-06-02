@@ -596,7 +596,91 @@ class InsectDashboard(App):
     
     def action_export(self) -> None:
         """Export detailed report."""
-        self.app.bell()
+        from pathlib import Path
+        from datetime import datetime
+        from insect.reporting.dashboard_html_formatter import DashboardHtmlFormatter
+        import traceback
+        
+        try:
+            # Validate data first
+            if not hasattr(self, 'findings') or self.findings is None:
+                self.notify("Export failed: No findings data available", severity="error")
+                return
+                
+            if not hasattr(self, 'metadata') or self.metadata is None:
+                self.notify("Export failed: No metadata available", severity="error")
+                return
+            
+            # Generate filename with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"insect_dashboard_{timestamp}.html"
+            output_path = Path.cwd() / filename
+            
+            # Ensure output directory is writable
+            try:
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                # Test write permissions
+                test_file = output_path.with_suffix('.tmp')
+                test_file.touch()
+                test_file.unlink()
+            except Exception as e:
+                self.notify(f"Export failed: Cannot write to {output_path.parent}: {e}", severity="error")
+                return
+            
+            # Create the HTML dashboard formatter
+            try:
+                formatter = DashboardHtmlFormatter({})
+            except Exception as e:
+                self.notify(f"Export failed: Cannot create formatter: {e}", severity="error")
+                return
+            
+            # Generate the HTML dashboard
+            try:
+                self.notify("Generating HTML dashboard...", timeout=2)
+                html_content = formatter.format_findings(self.findings, self.metadata)
+                
+                if not html_content or len(html_content) < 100:
+                    self.notify("Export failed: Generated HTML content appears invalid", severity="error")
+                    return
+                    
+            except Exception as e:
+                error_msg = f"Export failed during HTML generation: {e}"
+                # Add more detailed error info for debugging
+                if hasattr(e, '__traceback__'):
+                    tb_lines = traceback.format_exception(type(e), e, e.__traceback__)
+                    # Show just the most relevant error line
+                    for line in reversed(tb_lines):
+                        if 'dashboard_html_formatter.py' in line:
+                            error_msg += f" (at {line.strip()})"
+                            break
+                self.notify(error_msg, severity="error")
+                return
+            
+            # Write to file
+            try:
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write(html_content)
+                
+                # Verify file was written correctly
+                if not output_path.exists() or output_path.stat().st_size < 100:
+                    self.notify("Export failed: File was not written correctly", severity="error")
+                    return
+                    
+            except Exception as e:
+                self.notify(f"Export failed during file write: {e}", severity="error")
+                return
+            
+            # Show success message
+            file_size = output_path.stat().st_size
+            self.notify(f"✅ HTML dashboard exported to: {output_path} ({file_size:,} bytes)")
+            
+        except Exception as e:
+            # Catch-all for any unexpected errors
+            error_msg = f"Export failed with unexpected error: {e}"
+            self.notify(error_msg, severity="error")
+            # Also log to console for debugging
+            print(f"Dashboard export error: {e}")
+            traceback.print_exc()
     
     def action_next_issue(self) -> None:
         """Navigate to next issue in current file."""
