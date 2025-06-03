@@ -76,10 +76,10 @@ def create_formatter(format_name: str, config: Dict[str, Any]) -> BaseFormatter:
     Raises:
         ValueError: If format_name is not supported.
     """
+    from insect.reporting.dashboard_html_formatter import DashboardHtmlFormatter
     from insect.reporting.html_formatter import HtmlFormatter
     from insect.reporting.json_formatter import JsonFormatter
     from insect.reporting.text_formatter import TextFormatter
-    from insect.reporting.dashboard_html_formatter import DashboardHtmlFormatter
 
     formatters = {
         "text": TextFormatter,

@@ -1,12 +1,12 @@
 ---
 layout: page
-title: Security Examples
-nav_order: 3
+title: Threat Detection
+nav_order: 4
 ---
 
-# Security Issues Detection Examples
+# Threat Detection Examples
 
-This document provides examples of common security issues that Insect can detect, along with explanations and remediation advice.
+This document provides examples of malicious patterns and security threats that Insect can detect in external repositories, along with explanations and remediation advice.
 
 ## Table of Contents
 

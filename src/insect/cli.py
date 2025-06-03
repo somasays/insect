@@ -8,13 +8,10 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from rich import box
-from rich.align import Align
 from rich.console import Console
-from rich.live import Live
-from rich.panel import Panel
 from rich.progress import (
     BarColumn,
+    Column,
     Progress,
     SpinnerColumn,
     TaskProgressColumn,
@@ -22,9 +19,6 @@ from rich.progress import (
     TimeElapsedColumn,
 )
 from rich.prompt import Confirm
-from rich.rule import Rule
-from rich.text import Text
-from tabulate import tabulate
 
 from insect import __version__, core
 from insect.config import handler
@@ -86,7 +80,9 @@ SECURITY_ICONS = {
 def show_welcome_screen():
     """Display a minimal welcome message."""
     # Simple, clean banner following CLI best practices
-    console.print(f"[bold cyan]INSECT[/bold cyan] [dim]v{__version__}[/dim] - Security Scanner")
+    console.print(
+        f"[bold cyan]INSECT[/bold cyan] [dim]v{__version__}[/dim] - External Repository Security Scanner"
+    )
 
 
 def create_fancy_progress(description: str):
@@ -113,80 +109,111 @@ def create_fancy_progress(description: str):
 def display_scan_summary(metadata: Dict[str, Any]):
     """Display essential scan results in a clean, minimal format."""
     # Essential stats only
-    duration = metadata.get('duration_seconds', 0)
-    file_count = metadata.get('file_count', 0)
+    duration = metadata.get("duration_seconds", 0)
+    file_count = metadata.get("file_count", 0)
     severity_counts = metadata.get("severity_counts", {})
     total_issues = sum(severity_counts.values())
-    
+
     # Critical stats on one line
-    critical = severity_counts.get('critical', 0)
-    high = severity_counts.get('high', 0)
+    critical = severity_counts.get("critical", 0)
+    high = severity_counts.get("high", 0)
     urgent = critical + high
-    
+
     # Single line summary following CLI best practices
     status = "[green]✓[/green]" if urgent == 0 else "[red]⚠[/red]"
-    console.print(f"\n{status} [bold]{file_count}[/bold] files • [bold]{total_issues}[/bold] issues • {duration:.1f}s")
-    
+    console.print(
+        f"\n{status} [bold]{file_count}[/bold] files • [bold]{total_issues}[/bold] issues • {duration:.1f}s"
+    )
+
     if urgent > 0:
         console.print(f"[red]  {critical} critical, {high} high priority[/red]")
     elif total_issues > 0:
-        medium = severity_counts.get('medium', 0)
-        low = severity_counts.get('low', 0)
+        medium = severity_counts.get("medium", 0)
+        low = severity_counts.get("low", 0)
         console.print(f"[yellow]  {medium} medium, {low} low priority[/yellow]")
 
 
 def display_findings_summary(findings: List[Any], metadata: Dict[str, Any]):
     """Display findings in a focused, scannable format."""
     if not findings:
-        console.print(f"\n[green]✓ No security issues found[/green]")
+        console.print("\n[green]✓ No security issues found[/green]")
         return
-    
+
     # Focus on urgent issues first (CLI best practice: show most important info first)
-    urgent_issues = [f for f in findings if hasattr(f, 'severity') and f.severity.value in ['critical', 'high']]
-    
+    urgent_issues = [
+        f
+        for f in findings
+        if hasattr(f, "severity") and f.severity.value in ["critical", "high"]
+    ]
+
     if urgent_issues:
-        console.print(f"\n[bold red]⚠ {len(urgent_issues)} urgent issues require attention:[/bold red]")
-        
+        console.print(
+            f"\n[bold red]⚠ {len(urgent_issues)} urgent issues require attention:[/bold red]"
+        )
+
         # Show only top 5 most critical in simplified format
         for i, finding in enumerate(urgent_issues[:5], 1):
             severity_color = "red" if finding.severity.value == "critical" else "yellow"
             # Simplified one-line format
-            file_name = finding.location.path.name if hasattr(finding.location, 'path') else "unknown"
-            console.print(f"  [{severity_color}]{i}. {finding.severity.value.upper()}[/{severity_color}] {finding.title[:60]}")
+            file_name = (
+                finding.location.path.name
+                if hasattr(finding.location, "path")
+                else "unknown"
+            )
+            console.print(
+                f"  [{severity_color}]{i}. {finding.severity.value.upper()}[/{severity_color}] {finding.title[:60]}"
+            )
             console.print(f"     [dim]in {file_name}[/dim]")
-        
+
         if len(urgent_issues) > 5:
-            console.print(f"     [dim]... and {len(urgent_issues) - 5} more urgent issues[/dim]")
-    
+            console.print(
+                f"     [dim]... and {len(urgent_issues) - 5} more urgent issues[/dim]"
+            )
+
     # Show summary of remaining issues
     severity_counts = metadata.get("severity_counts", {})
-    medium = severity_counts.get('medium', 0)
-    low = severity_counts.get('low', 0)
-    
-    if medium > 0 or low > 0:
-        console.print(f"\n[dim]Additional issues: {medium} medium, {low} low priority[/dim]")
+    medium = severity_counts.get("medium", 0)
+    low = severity_counts.get("low", 0)
 
-def display_next_steps(findings: List[Any], metadata: Dict[str, Any]):
+    if medium > 0 or low > 0:
+        console.print(
+            f"\n[dim]Additional issues: {medium} medium, {low} low priority[/dim]"
+        )
+
+
+def display_next_steps(findings: List[Any], _metadata: Dict[str, Any]):
     """Display concise, actionable next steps."""
-    severity_counts = metadata.get("severity_counts", {})
-    
-    console.print(f"\n[bold]Next steps:[/bold]")
-    
+    console.print("\n[bold]Next steps:[/bold]")
+
     # Count urgent issues from actual findings (more reliable than metadata)
-    urgent_count = len([f for f in findings if hasattr(f, 'severity') and f.severity.value in ['critical', 'high']])
-    critical_count = len([f for f in findings if hasattr(f, 'severity') and f.severity.value == 'critical'])
-    
+    urgent_count = len(
+        [
+            f
+            for f in findings
+            if hasattr(f, "severity") and f.severity.value in ["critical", "high"]
+        ]
+    )
+    critical_count = len(
+        [
+            f
+            for f in findings
+            if hasattr(f, "severity") and f.severity.value == "critical"
+        ]
+    )
+
     if critical_count > 0:
-        console.print(f"[red]• Address {critical_count} critical vulnerabilities immediately[/red]")
+        console.print(
+            f"[red]• Address {critical_count} critical vulnerabilities immediately[/red]"
+        )
     elif urgent_count > 0:
         console.print(f"[yellow]• Review {urgent_count} high-priority issues[/yellow]")
     else:
         console.print("[green]• No urgent action required[/green]")
-    
+
     # Show one key command for more details
-    console.print("[dim]• Run with[/dim] [cyan]--format html[/cyan] [dim]for detailed report[/dim]")
-
-
+    console.print(
+        "[dim]• Run with[/dim] [cyan]--format html[/cyan] [dim]for detailed report[/dim]"
+    )
 
 
 def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
@@ -200,8 +227,8 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(
         prog="insect",
-        description="Insect - A security scanner for git repositories",
-        epilog="Run 'insect scan --help' for more information on scanning options.",
+        description="Safely analyze external Git repositories for malicious content before cloning",
+        epilog="Primary use: 'insect clone <github-url>' for external repos. Secondary: 'insect scan <path>' for local code.",
     )
 
     # Version info
@@ -214,7 +241,8 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
 
     # Scan command
     scan_parser = subparsers.add_parser(
-        "scan", help="Scan a git repository for security issues"
+        "scan",
+        help="Analyze local code for security issues (consider 'insect clone' for external repos)",
     )
 
     # Dependencies command
@@ -224,7 +252,8 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
 
     # Clone command
     clone_parser = subparsers.add_parser(
-        "clone", help="Clone and scan a git repository in a Docker container"
+        "clone",
+        help="Safely analyze external repository in container before cloning (RECOMMENDED)",
     )
 
     clone_parser.add_argument(
@@ -743,8 +772,30 @@ def main(args: Optional[List[str]] = None) -> int:
             return 0
 
         elif parsed_args.command == "scan":
+            # Check if this looks like a URL and suggest clone command
+            repo_path_str = str(parsed_args.repo_path)
+            if repo_path_str.startswith(("http", "git")):
+                console.print(
+                    f"[bold yellow]⚠️  Detected URL: {repo_path_str}[/bold yellow]"
+                )
+                console.print(
+                    "[bold cyan]💡 Tip: Use 'insect clone' for external repositories:[/bold cyan]"
+                )
+                console.print(f"[cyan]  insect clone {repo_path_str}[/cyan]\n")
+
+            # Show Docker warning for scan command when Docker not available
+            from insect.utils.docker_utils import check_docker_available
+
+            if not check_docker_available():
+                console.print(
+                    "[bold yellow]⚠️  Docker not available. For maximum safety when analyzing "
+                    "external code, use 'insect clone <url>' with Docker.[/bold yellow]\n"
+                )
+
             logger.info(f"Scanning repository: {parsed_args.repo_path}")
-            console.print(f"\\n[bold]Scanning:[/bold] [cyan]{parsed_args.repo_path}[/cyan]")
+            console.print(
+                f"[bold]Scanning:[/bold] [cyan]{parsed_args.repo_path}[/cyan]"
+            )
 
             # Load config from file if specified, or use default
             config_path = parsed_args.config
@@ -808,7 +859,9 @@ def main(args: Optional[List[str]] = None) -> int:
             )
 
             # Determine if progress should be shown overall (respects --no-progress via config)
-            should_show_progress_overall = config.get("progress", {}).get("enabled", True)
+            should_show_progress_overall = config.get("progress", {}).get(
+                "enabled", True
+            )
 
             if should_show_progress_overall:
                 console.print(
@@ -858,23 +911,24 @@ def main(args: Optional[List[str]] = None) -> int:
                         findings_to_show: Any = (
                             findings_list if "findings_list" in locals() else findings
                         )
-                        
+
                         if parsed_args.no_dashboard:
                             # Simple text output
                             display_scan_summary(metadata)
                             display_findings_summary(findings_to_show, metadata)
                             display_next_steps(findings_to_show, metadata)
-                            console.print() # Clean ending
+                            console.print()  # Clean ending
                         else:
                             # Show comprehensive interactive dashboard
                             from insect.dashboard import show_dashboard
+
                             show_dashboard(findings_to_show, metadata)
                     else:
                         # For other formats without output file, print to stdout
                         report_content = formatter.format_findings(
                             findings_for_formatter, metadata
                         )
-                        if report_content: # Ensure there's something to print
+                        if report_content:  # Ensure there's something to print
                             console.print(report_content)
 
             except Exception as e:

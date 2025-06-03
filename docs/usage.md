@@ -1,18 +1,20 @@
 ---
 layout: page
 title: Usage Guide
-nav_order: 2
+nav_order: 6
 ---
 
 # Insect Usage Guide
 
-Insect is a security-focused CLI tool designed to scan Git repositories for potentially malicious code patterns before execution. It uses a combination of static analysis, configuration checks, and metadata examination to identify security risks in code.
+Insect is a security tool for safely analyzing external Git repositories for malicious content before cloning or execution. This guide covers both primary (external scanning) and secondary (internal scanning) use cases.
 
 ## Table of Contents
 
 - [Installation](#installation)
-- [Basic Usage](#basic-usage)
+- [Primary Use Case: External Repository Scanning](#primary-use-case-external-repository-scanning)
+- [Secondary Use Case: Local Code Scanning](#secondary-use-case-local-code-scanning)
 - [Command Reference](#command-reference)
+  - [clone](#clone)
   - [scan](#scan)
   - [deps](#deps)
 - [Configuration](#configuration)
@@ -43,24 +45,87 @@ cd insect
 pip install -e .
 ```
 
-## Basic Usage
+## Primary Use Case: External Repository Scanning
 
-The most common use case for Insect is to scan a Git repository:
+The primary and recommended use case for Insect is analyzing external repositories safely:
 
 ```bash
-insect scan /path/to/repository
+# Safely analyze external repository before cloning
+insect clone https://github.com/suspicious/repository
+
+# Advanced analysis with high sensitivity
+insect clone https://github.com/example/repo --scan-args "--sensitivity high"
+
+# Generate detailed security report
+insect clone https://github.com/vendor/tool --report-path security-analysis.json
 ```
 
 This will:
-1. Discover all files in the repository
-2. Apply relevant analyzers to each file
-3. Generate a report of security findings
+1. Clone the repository in an isolated Docker container
+2. Apply comprehensive security analysis
+3. Show security findings and threat assessment
+4. Prompt for confirmation before local cloning
+
+## Secondary Use Case: Local Code Scanning
+
+For analyzing local code (requires Docker for full security features):
+
+```bash
+# Scan local project
+insect scan ./my-project
+
+# Generate HTML report
+insect scan ./my-project --format html --output security-report.html
+```
 
 ## Command Reference
 
+### clone
+
+The `clone` command safely analyzes external repositories in containers (RECOMMENDED):
+
+```bash
+insect clone [OPTIONS] REPO_URL
+```
+
+#### Options
+
+| Option | Description |
+|--------|-------------|
+| `--output-dir`, `-o` | Directory where to clone the repository (defaults to current directory) |
+| `--branch`, `-b` | Branch to check out (defaults to default branch) |
+| `--commit`, `-c` | Specific commit to check out (overrides branch) |
+| `--image`, `-i` | Docker image to use (defaults to 'python:3.10-slim') |
+| `--scan-args` | Additional arguments to pass to the insect scan command |
+| `--report-path` | Path to save the scan report JSON (defaults to not saving) |
+
+#### Example: Basic External Repository Analysis
+
+```bash
+insect clone https://github.com/suspicious/repository
+```
+
+#### Example: Generating a Detailed Security Report
+
+```bash
+insect clone https://github.com/vendor/tool --report-path security-analysis.json
+```
+
+#### Example: Analyzing Specific Branch
+
+```bash
+insect clone https://github.com/example/repo --branch develop --scan-args "--sensitivity high"
+```
+
+#### Example: High Sensitivity Analysis
+
+```bash
+insect clone https://github.com/questionable/repo --scan-args "--sensitivity very_high --format html"
+```
+
 ### scan
 
-The `scan` command analyzes a repository for security issues:
+The `scan` command analyzes local code for security issues:
 
 ```bash
 insect scan [OPTIONS] REPO_PATH
@@ -80,32 +145,27 @@ insect scan [OPTIONS] REPO_PATH
 | `--max-depth` | Maximum directory depth to scan |
 | `--no-secrets` | Disable secrets detection |
 | `--severity` | Minimum severity level to report: low, medium, high, critical (default: low) |
+| `--sensitivity` | Analysis sensitivity level: low, normal, high, very_high (default: normal) |
 | `--no-cache` | Disable the scan cache (ignore cached results) |
 | `--clear-cache` | Clear the scan cache before scanning |
 | `--no-progress` | Disable the progress bar |
 
-#### Example: Basic Scan with Text Output
+#### Example: Basic Local Scan
 
 ```bash
-insect scan /path/to/your/repo
+insect scan ./my-project
 ```
 
 #### Example: Generating an HTML Report
 
 ```bash
-insect scan /path/to/your/repo -f html -o report.html
+insect scan ./my-project -f html -o security-report.html
 ```
 
-#### Example: Excluding Certain Patterns
+#### Example: High Sensitivity Local Analysis
 
 ```bash
-insect scan /path/to/your/repo --exclude-pattern "node_modules/*" --exclude-pattern "*.min.js"
-```
-
-#### Example: Setting Minimum Severity
-
-```bash
-insect scan /path/to/your/repo --severity medium
+insect scan ./my-project --sensitivity high --severity medium
 ```
 
 ### deps
@@ -272,63 +332,92 @@ The HTML report includes:
 
 ## Real-World Examples
 
-### Scanning a JavaScript Project
+### Vetting External Dependencies
 
 ```bash
-insect scan /path/to/js-project --exclude-pattern "node_modules/*" --exclude-pattern "dist/*" -f html -o js-report.html
+# Analyze JavaScript library before adding to project
+insect clone https://github.com/author/js-library --report-path js-lib-analysis.json
+
+# Comprehensive analysis of Python package
+insect clone https://github.com/author/python-package --scan-args "--sensitivity high --format html"
+
+# Quick safety check of Go module
+insect clone https://github.com/author/go-module --scan-args "--severity medium"
 ```
 
-### Scanning a Python Package
+### Security Research and Investigation
 
 ```bash
-insect scan /path/to/python-package --exclude-pattern "venv/*" --exclude-pattern "*.pyc" -f json -o py-report.json
+# Analyze reported malicious repository
+insect clone https://github.com/suspicious/stealer --scan-args "--sensitivity very_high" --report-path malware-analysis.json
+
+# Investigate browser extension for theft patterns
+insect clone https://github.com/questionable/extension --scan-args "--format html" --report-path extension-analysis.html
+
+# Analyze crypto mining repository
+insect clone https://github.com/mining/tool --report-path crypto-analysis.json
 ```
 
-### Scanning for Browser Data Theft
+### Local Code Quality (Secondary Use Case)
 
 ```bash
-# Scan specifically for browser data theft patterns
-insect scan /path/to/suspicious-repo --severity medium -f html -o browser-security-report.html
+# Scan local JavaScript project
+insect scan ./js-project --exclude-pattern "node_modules/*" --exclude-pattern "dist/*" -f html -o local-js-report.html
+
+# Analyze local Python package
+insect scan ./python-package --exclude-pattern "venv/*" --exclude-pattern "*.pyc" -f json -o local-py-report.json
 ```
 
-### Scanning Browser Extension Code
+### CI/CD Integration Examples
 
-```bash
-# Scan browser extension project with focus on security
-insect scan /path/to/browser-extension --include-pattern "*.js" --include-pattern "*.html" -f json -o extension-scan.json
-```
-
-### CI/CD Integration Example
-
+#### External Dependency Vetting
 ```yaml
-# In a GitHub Actions workflow
-name: Security Scan
+# GitHub Actions workflow for dependency security
+name: Dependency Security Check
+
+on:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'requirements.txt'
+
+jobs:
+  security-vet:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Insect
+      run: pip install insect
+    - name: Vet new dependencies
+      run: |
+        # Extract and analyze new dependencies
+        ./scripts/vet-dependencies.sh
+    - name: Upload security reports
+      uses: actions/upload-artifact@v2
+      with:
+        name: dependency-security-reports
+        path: security-reports/
+```
+
+#### Internal Code Quality (Secondary)
+```yaml
+# Internal code quality workflow
+name: Code Quality Scan
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
-  insect-scan:
+  quality-scan:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.10'
     - name: Install Insect
       run: pip install insect
-    - name: Run Insect Scan
+    - name: Run quality scan
       run: |
-        insect scan . -f json -o scan-results.json --severity medium
-    - name: Upload scan results
-      uses: actions/upload-artifact@v2
-      with:
-        name: insect-scan-results
-        path: scan-results.json
+        insect scan . -f json -o quality-results.json --severity medium
 ```
 
 ### Pre-commit Hook Example
@@ -385,26 +474,38 @@ insect scan /path/to/large-repo --severity medium --max-depth 5
 
 ## Best Practices
 
-### Regular Scanning
+### External Repository Vetting (Primary Use Case)
 
-Run Insect scans regularly as part of your development workflow:
-- Before merging new code
-- As part of CI/CD pipelines
-- When integrating third-party libraries
+**Always analyze before cloning:**
+```bash
+# ✅ Safe: Analyze first
+insect clone https://github.com/untrusted/repo
 
-### Customized Configuration
+# ❌ Dangerous: Direct cloning
+git clone https://github.com/untrusted/repo
+```
 
-Create a custom configuration file for each project:
+**Regular dependency monitoring:**
+- Scan dependencies before integration
+- Monitor for updates that introduce new threats
+- Document security assessments for compliance
+
+**Team integration:**
+- Establish vetting workflows for external code
+- Create security reports for management review
+- Use high sensitivity for suspicious repositories
+
+### Local Code Quality (Secondary Use Case)
+
+**Development workflow integration:**
+- Scan before committing critical changes
+- Use in CI/CD for code quality gates
+- Focus on fixing critical and high-severity issues
+
+**Configuration management:**
+- Create project-specific configurations
 - Exclude testing and build directories
-- Focus on critical security concerns
-- Adjust for language-specific needs
-
-### Incremental Improvements
-
-1. Start with a baseline scan
-2. Address critical and high-severity findings first
-3. Add allowlist entries for known, approved patterns
-4. Re-scan regularly to ensure continued compliance
+- Adjust sensitivity based on project requirements
 
 ### Enhancing with External Tools
 

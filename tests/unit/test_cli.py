@@ -30,7 +30,10 @@ class TestCLIArgumentParsing:
         assert excinfo.value.code == 0
         captured = capsys.readouterr()
         assert "insect" in captured.out
-        assert "Insect - A security scanner" in captured.out
+        assert (
+            "Safely analyze external Git repositories for malicious content before cloning"
+            in captured.out
+        )
 
     def test_no_command(self):
         """Test that running without a command shows help and exits."""
@@ -125,7 +128,7 @@ class TestCLIMain:
         """Test that the main function handles the scan command."""
         with patch("insect.cli.parse_args") as mock_parse_args, patch(
             "insect.core.scan_repository"
-        ) as mock_scan_repository:
+        ) as mock_scan_repository, patch("insect.dashboard.show_dashboard"):
             # Set up mock return values
             mock_scan_repository.return_value = (
                 [],
@@ -161,6 +164,8 @@ class TestCLIMain:
                 clear_cache=False,
                 no_progress=False,
                 install_deps=False,
+                no_dashboard=False,
+                dashboard=True,
             )
             mock_parse_args.return_value = mock_args
 
@@ -172,8 +177,9 @@ class TestCLIMain:
 
             # Verify that the output contains expected messages
             captured = capsys.readouterr()
-            assert "Repository to scan" in captured.out
-            assert "/path/to/repo" in captured.out
+            assert "Scanning:" in captured.out
+            assert "/path/to/" in captured.out
+            assert "repo" in captured.out
 
     def test_main_exception_handling(self, capsys):
         """Test that the main function handles exceptions correctly."""

@@ -1,169 +1,258 @@
 ---
 layout: page
 title: Use Cases
-nav_order: 4
+nav_order: 8
 ---
 
 # Insect Use Cases
 
-This document provides real-world use cases for Insect in different environments and scenarios.
+This document provides real-world use cases for Insect, focusing primarily on **external repository security analysis** and secondarily on internal development workflows.
 
 ## Table of Contents
 
-- [DevSecOps Integration](#devsecops-integration)
-- [Third-Party Code Validation](#third-party-code-validation)
+- [External Repository Vetting](#external-repository-vetting)
+- [Supply Chain Security](#supply-chain-security)
+- [Security Research and Investigation](#security-research-and-investigation)
 - [Corporate Security Compliance](#corporate-security-compliance)
-- [Continuous Security Monitoring](#continuous-security-monitoring)
 - [Browser Security Protection](#browser-security-protection)
+- [DevSecOps Integration (Internal)](#devsecops-integration-internal)
 - [Security Education](#security-education)
 
-## DevSecOps Integration
+## External Repository Vetting
 
-Incorporating security into the development process from the beginning.
+Safely analyzing external repositories before integration or use.
 
-### Use Case: Pre-Commit Code Scanning
+### Use Case: Dependency Security Assessment
 
-**Scenario**: A development team wants to prevent security issues from being committed to the codebase.
-
-**Implementation**:
-
-1. Install pre-commit:
-   ```bash
-   pip install pre-commit
-   ```
-
-2. Create a `.pre-commit-config.yaml` file:
-   ```yaml
-   repos:
-   -   repo: local
-       hooks:
-       -   id: insect-scan
-           name: Insect Security Scan
-           entry: insect scan
-           args: [--severity, medium]
-           language: system
-           pass_filenames: false
-   ```
-
-3. Install the pre-commit hook:
-   ```bash
-   pre-commit install
-   ```
-
-**Benefits**:
-- Security issues are identified before code is committed
-- Immediate feedback loop for developers
-- Prevents security vulnerabilities from entering the codebase
-
-### Use Case: Pipeline Integration
-
-**Scenario**: An organization wants to enforce security standards across all repositories.
+**Scenario**: A development team needs to evaluate the security of a third-party JavaScript library before adding it as a dependency.
 
 **Implementation**:
 
-1. Create a centralized security scanning pipeline in your CI/CD system
-
-2. Configure it to run Insect with organization-wide rules:
+1. Analyze the library's source repository:
    ```bash
-   insect scan . -f json -o scan-results.json --config /path/to/org-rules.toml
+   insect clone https://github.com/author/js-library --report-path library-security-assessment.json
    ```
 
-3. Set up automatic failure for critical issues:
+2. Review the security findings and risk assessment
+
+3. Generate detailed report for team review:
    ```bash
-   if grep -q '"severity": "critical"' scan-results.json; then
-       echo "Critical security issues found!"
-       exit 1
-   fi
+   insect clone https://github.com/author/js-library --scan-args "--format html --sensitivity high" --report-path library-detailed-analysis.html
    ```
 
-4. Archive results for audit purposes
-
-**Benefits**:
-- Consistent security standards across all projects
-- Automatic enforcement of security policies
-- Historical security data for compliance and auditing
-
-## Third-Party Code Validation
-
-Assessing the security of external code before integration.
-
-### Use Case: Dependency Screening
-
-**Scenario**: A team needs to evaluate the security of a JavaScript library before adding it as a dependency.
-
-**Implementation**:
-
-1. Clone the library's repository:
-   ```bash
-   git clone https://github.com/example/library.git
-   cd library
-   ```
-
-2. Run a comprehensive Insect scan:
-   ```bash
-   insect scan . -f html -o library-security-report.html
-   ```
-
-3. Review the security findings and make an informed decision
+4. Make informed decision based on security findings
 
 **Benefits**:
 - Identifies potential security risks before integration
 - Provides documentation for security reviews
 - Helps avoid introducing vulnerabilities through dependencies
+- Enables informed decision-making about external code
 
-### Use Case: Open Source Contribution Validation
+### Use Case: Vendor Software Evaluation
 
-**Scenario**: A project maintainer needs to review security aspects of a pull request.
+**Scenario**: A security team needs to assess multiple vendor tools before procurement decisions.
 
 **Implementation**:
 
-1. Check out the PR branch:
+1. Create systematic evaluation process:
    ```bash
-   git fetch origin pull/123/head:pr-123
-   git checkout pr-123
+   #!/bin/bash
+   # vendor-evaluation.sh
+   
+   VENDORS=("vendor1/product" "vendor2/solution" "vendor3/tool")
+   ASSESSMENT_DIR="./vendor-assessments/$(date +%Y%m)"
+   
+   mkdir -p "$ASSESSMENT_DIR"
+   
+   for vendor_repo in "${VENDORS[@]}"; do
+       echo "Assessing $vendor_repo..."
+       insect clone "https://github.com/$vendor_repo" \
+           --scan-args "--sensitivity very_high --format html" \
+           --report-path "$ASSESSMENT_DIR/$(echo $vendor_repo | tr '/' '_')-assessment.html"
+   done
    ```
 
-2. Run a focused scan on the changes:
-   ```bash
-   git diff --name-only main... | xargs insect scan -f json -o pr-security.json
-   ```
+2. Compare security profiles across vendors
 
-3. Review findings before merging
+3. Generate executive summary for procurement decisions
 
 **Benefits**:
-- Ensures contributions maintain security standards
-- Provides objective security assessment of changes
-- Streamlines security review process
+- Objective security comparison between vendors
+- Documentation for procurement and compliance
+- Risk-based vendor selection process
+
+## Supply Chain Security
+
+Protecting against compromised dependencies and malicious packages.
+
+### Use Case: Package Update Verification
+
+**Scenario**: A team needs to verify that a package update doesn't introduce malicious code or new vulnerabilities.
+
+**Implementation**:
+
+1. Analyze current version baseline:
+   ```bash
+   insect clone https://github.com/vendor/package --branch v1.2.0 --report-path baseline-v1.2.0.json
+   ```
+
+2. Analyze proposed update:
+   ```bash
+   insect clone https://github.com/vendor/package --branch v1.3.0 --report-path candidate-v1.3.0.json
+   ```
+
+3. Compare security profiles:
+   ```bash
+   # Compare findings counts
+   BASELINE_CRITICAL=$(grep -c '"severity": "critical"' baseline-v1.2.0.json || echo "0")
+   CANDIDATE_CRITICAL=$(grep -c '"severity": "critical"' candidate-v1.3.0.json || echo "0")
+   
+   if [ "$CANDIDATE_CRITICAL" -gt "$BASELINE_CRITICAL" ]; then
+       echo "⚠️ New critical issues introduced in update"
+       exit 1
+   fi
+   ```
+
+4. Document security impact assessment
+
+**Benefits**:
+- Prevents introduction of malicious code through updates
+- Maintains visibility into security posture changes
+- Enables informed update decisions
+
+### Use Case: Typosquatting Detection
+
+**Scenario**: A security team wants to identify potentially malicious packages with names similar to popular libraries.
+
+**Implementation**:
+
+1. Create monitoring for suspicious packages:
+   ```bash
+   # Monitor packages with names similar to popular libraries
+   SUSPICIOUS_PACKAGES=(
+       "https://github.com/author/reqeusts"  # vs "requests"
+       "https://github.com/author/expres"    # vs "express"
+       "https://github.com/author/reactt"    # vs "react"
+   )
+   
+   for package in "${SUSPICIOUS_PACKAGES[@]}"; do
+       echo "Analyzing potentially malicious package: $package"
+       insect clone "$package" \
+           --scan-args "--sensitivity very_high --format json" \
+           --report-path "typosquat-$(basename $package)-analysis.json"
+           
+       # Check for malicious patterns
+       if grep -q '"browser_theft"' "typosquat-$(basename $package)-analysis.json"; then
+           echo "🚨 ALERT: Browser theft patterns detected in $package"
+       fi
+   done
+   ```
+
+**Benefits**:
+- Early detection of typosquatting attempts
+- Protection against supply chain attacks
+- Automated monitoring of package ecosystem
+
+## Security Research and Investigation
+
+Using Insect for security research, threat hunting, and malware analysis.
+
+### Use Case: Malware Repository Analysis
+
+**Scenario**: Security researchers need to safely analyze repositories reported as containing malware.
+
+**Implementation**:
+
+1. High-sensitivity analysis of reported malicious repository:
+   ```bash
+   insect clone https://github.com/reported/malware \
+       --scan-args "--sensitivity very_high --format html" \
+       --report-path malware-analysis-$(date +%Y%m%d).html
+   ```
+
+2. Focus on specific threat types:
+   ```bash
+   # Analyze for browser data theft
+   insect clone https://github.com/suspicious/browser-stealer \
+       --scan-args "--sensitivity very_high" \
+       --report-path browser-stealer-investigation.json
+   
+   # Analyze for cryptocurrency theft
+   insect clone https://github.com/crypto/miner \
+       --scan-args "--sensitivity very_high" \
+       --report-path crypto-threat-analysis.json
+   ```
+
+3. Document findings for threat intelligence
+
+**Benefits**:
+- Safe analysis of malicious code without execution risk
+- Comprehensive threat detection and classification
+- Evidence collection for threat intelligence
 
 ## Corporate Security Compliance
 
-Meeting organizational security requirements.
+Meeting organizational security requirements for external code usage.
 
-### Use Case: Compliance Auditing
+### Use Case: Third-Party Software Governance
 
-**Scenario**: A company needs to demonstrate security controls for regulatory compliance.
+**Scenario**: An enterprise needs to demonstrate due diligence in vetting external software for regulatory compliance.
 
 **Implementation**:
 
-1. Create a compliance-focused configuration:
-   ```toml
-   # compliance.toml
-   [general]
-   include_hidden = true
-   
-   [analyzers]
-   secrets = true
-   
-   [severity]
-   min_level = "low"
-   ```
-
-2. Schedule regular scans with detailed reports:
+1. Establish vendor assessment procedures:
    ```bash
-   insect scan /path/to/codebase -f html -o compliance-report.html --config compliance.toml
+   #!/bin/bash
+   # compliance-assessment.sh
+   
+   VENDOR_REPO="$1"
+   COMPLIANCE_DIR="./compliance-assessments/$(date +%Y)"
+   ASSESSMENT_ID="$(date +%Y%m%d)-$(basename $VENDOR_REPO)"
+   
+   mkdir -p "$COMPLIANCE_DIR"
+   
+   # Comprehensive security analysis
+   insect clone "$VENDOR_REPO" \
+       --scan-args "--sensitivity very_high --format html" \
+       --report-path "$COMPLIANCE_DIR/$ASSESSMENT_ID-detailed.html"
+   
+   # JSON for automated compliance checking
+   insect clone "$VENDOR_REPO" \
+       --scan-args "--sensitivity very_high --format json" \
+       --report-path "$COMPLIANCE_DIR/$ASSESSMENT_ID-data.json"
+   
+   # Generate compliance summary
+   CRITICAL=$(grep -c '"severity": "critical"' "$COMPLIANCE_DIR/$ASSESSMENT_ID-data.json" || echo "0")
+   HIGH=$(grep -c '"severity": "high"' "$COMPLIANCE_DIR/$ASSESSMENT_ID-data.json" || echo "0")
+   
+   cat > "$COMPLIANCE_DIR/$ASSESSMENT_ID-summary.md" << EOF
+   # Compliance Assessment: $(basename $VENDOR_REPO)
+   
+   **Assessment Date**: $(date)
+   **Assessment ID**: $ASSESSMENT_ID
+   **Repository**: $VENDOR_REPO
+   **Compliance Officer**: $(whoami)
+   
+   ## Risk Assessment
+   - Critical Issues: $CRITICAL
+   - High Issues: $HIGH
+   
+   ## Compliance Status
+   $([ "$CRITICAL" -eq 0 ] && echo "✅ COMPLIANT" || echo "❌ NON-COMPLIANT")
+   
+   ## Recommendation
+   $([ "$CRITICAL" -eq 0 ] && echo "Approved for use with documented risks" || echo "Rejected - critical security issues must be addressed")
+   EOF
    ```
 
-3. Store reports securely for audit trail
+2. Maintain audit trail of all assessments
+
+3. Schedule regular re-assessments of approved software
+
+**Benefits**:
+- Documented security due diligence for auditors
+- Systematic approach to vendor risk management
+- Evidence of security controls for compliance frameworks
 
 **Benefits**:
 - Documentation for compliance audits

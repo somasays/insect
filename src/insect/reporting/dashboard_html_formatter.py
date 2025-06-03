@@ -1,12 +1,14 @@
 """Dashboard HTML formatter for Insect reports - mirrors CLI dashboard layout."""
 
 import json
-from datetime import datetime
+import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from insect.finding import Finding
 from insect.reporting.formatters import BaseFormatter
+
+logger = logging.getLogger(__name__)
 
 
 class DashboardHtmlFormatter(BaseFormatter):
@@ -14,9 +16,9 @@ class DashboardHtmlFormatter(BaseFormatter):
 
     format_name = "dashboard-html"
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         """Initialize the dashboard HTML formatter.
-        
+
         Args:
             config: Configuration dictionary (optional).
         """
@@ -38,9 +40,14 @@ class DashboardHtmlFormatter(BaseFormatter):
         dependencies = get_dependencies_status()
 
         # Group findings by file for the file explorer
-        file_issues = {}
+        file_issues: Dict[str, List[Finding]] = {}
         for finding in findings:
-            if hasattr(finding, 'location') and finding.location and hasattr(finding.location, 'path') and finding.location.path:
+            if (
+                hasattr(finding, "location")
+                and finding.location
+                and hasattr(finding.location, "path")
+                and finding.location.path
+            ):
                 file_path = str(finding.location.path)
                 if file_path not in file_issues:
                     file_issues[file_path] = []
@@ -52,33 +59,67 @@ class DashboardHtmlFormatter(BaseFormatter):
             try:
                 # Safely extract location information
                 location_str = str(finding.location) if finding.location else "Unknown"
-                location_file = str(finding.location.path) if (finding.location and hasattr(finding.location, 'path') and finding.location.path) else "Unknown"
-                location_line = getattr(finding.location, 'line_start', None) if finding.location else None
-                
+                location_file = (
+                    str(finding.location.path)
+                    if (
+                        finding.location
+                        and hasattr(finding.location, "path")
+                        and finding.location.path
+                    )
+                    else "Unknown"
+                )
+                location_line = (
+                    getattr(finding.location, "line_start", None)
+                    if finding.location
+                    else None
+                )
+
                 formatted_findings.append(
                     {
-                        "id": getattr(finding, 'id', 'unknown'),
-                        "title": getattr(finding, 'title', 'Unknown Issue'),
-                        "description": getattr(finding, 'description', ''),
-                        "severity": finding.severity.value if hasattr(finding, 'severity') and finding.severity else "unknown",
-                        "severity_label": finding.severity.name if hasattr(finding, 'severity') and finding.severity else "Unknown",
-                        "type": finding.type.value if hasattr(finding, 'type') and finding.type else "unknown",
-                        "type_label": finding.type.name.title() if hasattr(finding, 'type') and finding.type and hasattr(finding.type, 'name') else "Unknown",
+                        "id": getattr(finding, "id", "unknown"),
+                        "title": getattr(finding, "title", "Unknown Issue"),
+                        "description": getattr(finding, "description", ""),
+                        "severity": (
+                            finding.severity.value
+                            if hasattr(finding, "severity") and finding.severity
+                            else "unknown"
+                        ),
+                        "severity_label": (
+                            finding.severity.name
+                            if hasattr(finding, "severity") and finding.severity
+                            else "Unknown"
+                        ),
+                        "type": (
+                            finding.type.value
+                            if hasattr(finding, "type") and finding.type
+                            else "unknown"
+                        ),
+                        "type_label": (
+                            finding.type.name.title()
+                            if hasattr(finding, "type")
+                            and finding.type
+                            and hasattr(finding.type, "name")
+                            else "Unknown"
+                        ),
                         "location": location_str,
                         "location_file": location_file,
                         "location_line": location_line,
-                        "remediation": getattr(finding, 'remediation', '') or "",
-                        "references": getattr(finding, 'references', []) or [],
+                        "remediation": getattr(finding, "remediation", "") or "",
+                        "references": getattr(finding, "references", []) or [],
                         "confidence": f"{getattr(finding, 'confidence', 0) * 100:.0f}%",
-                        "analyzer": getattr(finding, 'analyzer', 'unknown'),
-                        "created_at": finding.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(finding, 'created_at') and finding.created_at else "Unknown",
-                        "cwe_id": getattr(finding, 'cwe_id', '') or "",
-                        "cvss_score": getattr(finding, 'cvss_score', None),
+                        "analyzer": getattr(finding, "analyzer", "unknown"),
+                        "created_at": (
+                            finding.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                            if hasattr(finding, "created_at") and finding.created_at
+                            else "Unknown"
+                        ),
+                        "cwe_id": getattr(finding, "cwe_id", "") or "",
+                        "cvss_score": getattr(finding, "cvss_score", None),
                     }
                 )
             except Exception as e:
                 # Log the error and skip this finding
-                print(f"Warning: Error processing finding: {e}")
+                logger.warning(f"Error processing finding: {e}")
                 continue
 
         # Prepare file tree data
@@ -86,27 +127,31 @@ class DashboardHtmlFormatter(BaseFormatter):
 
         # JSON encode the data for use in JavaScript with error handling
         try:
-            findings_json = json.dumps(formatted_findings, default=str, ensure_ascii=False)
+            findings_json = json.dumps(
+                formatted_findings, default=str, ensure_ascii=False
+            )
         except Exception as e:
-            print(f"Warning: Error encoding findings to JSON: {e}")
+            logger.warning(f"Error encoding findings to JSON: {e}")
             findings_json = "[]"
-            
+
         try:
             metadata_json = json.dumps(metadata, default=str, ensure_ascii=False)
         except Exception as e:
-            print(f"Warning: Error encoding metadata to JSON: {e}")
+            logger.warning(f"Error encoding metadata to JSON: {e}")
             metadata_json = "{}"
-            
+
         try:
-            dependencies_json = json.dumps(dependencies, default=str, ensure_ascii=False)
+            dependencies_json = json.dumps(
+                dependencies, default=str, ensure_ascii=False
+            )
         except Exception as e:
-            print(f"Warning: Error encoding dependencies to JSON: {e}")
+            logger.warning(f"Error encoding dependencies to JSON: {e}")
             dependencies_json = "{}"
-            
+
         try:
             file_tree_json = json.dumps(file_tree_data, default=str, ensure_ascii=False)
         except Exception as e:
-            print(f"Warning: Error encoding file tree to JSON: {e}")
+            logger.warning(f"Error encoding file tree to JSON: {e}")
             file_tree_json = '{"name": "Repository", "children": [], "issues": 0}'
 
         # Generate scan summary data with error handling
@@ -123,26 +168,32 @@ class DashboardHtmlFormatter(BaseFormatter):
 
             total_files_processed = metadata.get("total_files_processed", 0)
             file_count = metadata.get("file_count", 0)
-            files_scanned = total_files_processed if total_files_processed > 0 else file_count
-            
+            files_scanned = (
+                total_files_processed if total_files_processed > 0 else file_count
+            )
+
             duration = metadata.get("duration_seconds", 0)
             finding_count = metadata.get("finding_count", 0)
-            
+
             # Risk assessment
             severity_counts = metadata.get("severity_counts", {})
             severity_counts_lower = {}
-            
+
             # Safely convert severity counts to lowercase
             try:
-                severity_counts_lower = {str(k).lower(): int(v) for k, v in severity_counts.items() if v is not None}
+                severity_counts_lower = {
+                    str(k).lower(): int(v)
+                    for k, v in severity_counts.items()
+                    if v is not None
+                }
             except Exception:
                 severity_counts_lower = {}
-                
+
             total_issues = sum(severity_counts_lower.values())
-            
+
             critical = severity_counts_lower.get("critical", 0)
             high = severity_counts_lower.get("high", 0)
-            
+
             if critical > 0:
                 risk_level = "CRITICAL"
                 risk_class = "critical"
@@ -157,7 +208,7 @@ class DashboardHtmlFormatter(BaseFormatter):
                 risk_class = "low"
 
         except Exception as e:
-            print(f"Warning: Error generating scan summary: {e}")
+            logger.warning(f"Error generating scan summary: {e}")
             # Set safe defaults
             display_path = "Unknown"
             files_scanned = 0
@@ -170,8 +221,13 @@ class DashboardHtmlFormatter(BaseFormatter):
         try:
             insights_data = self._generate_insights_data(findings, metadata)
         except Exception as e:
-            print(f"Warning: Error generating insights: {e}")
-            insights_data = {"alerts": [], "top_types": [], "top_files": [], "recommendations": []}
+            logger.warning(f"Error generating insights: {e}")
+            insights_data = {
+                "alerts": [],
+                "top_types": [],
+                "top_files": [],
+                "recommendations": [],
+            }
 
         # Generate the HTML
         template = self._get_dashboard_html_template()
@@ -192,7 +248,9 @@ class DashboardHtmlFormatter(BaseFormatter):
 
         return html
 
-    def _build_file_tree_data(self, file_issues: Dict[str, List[Finding]], metadata: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_file_tree_data(
+        self, file_issues: Dict[str, List[Finding]], metadata: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Build file tree data structure for the explorer."""
         if not file_issues:
             return {"name": "Repository", "children": [], "issues": 0}
@@ -203,22 +261,27 @@ class DashboardHtmlFormatter(BaseFormatter):
         repo_name = expanded_path.name if expanded_path.name else "Repository"
 
         # Build tree structure
-        tree = {"name": repo_name, "type": "directory", "children": [], "issues": 0}
-        directory_nodes = {"": tree}
+        tree: Dict[str, Any] = {
+            "name": repo_name,
+            "type": "directory",
+            "children": [],
+            "issues": 0,
+        }
+        directory_nodes: Dict[str, Any] = {"": tree}
 
         for file_path, issues in file_issues.items():
             try:
                 path_parts = Path(file_path).parts
                 if not path_parts:  # Skip empty paths
                     continue
-                    
+
                 current_path = ""
-                
+
                 # Create directory nodes (skip if only one part - root file)
                 for i, part in enumerate(path_parts[:-1]):
                     parent_path = current_path
-                    current_path = "/".join(path_parts[:i+1])
-                    
+                    current_path = "/".join(path_parts[: i + 1])
+
                     if current_path not in directory_nodes:
                         parent_node = directory_nodes.get(parent_path, tree)
                         dir_node = {
@@ -226,7 +289,7 @@ class DashboardHtmlFormatter(BaseFormatter):
                             "type": "directory",
                             "path": current_path,
                             "children": [],
-                            "issues": 0
+                            "issues": 0,
                         }
                         parent_node["children"].append(dir_node)
                         directory_nodes[current_path] = dir_node
@@ -234,59 +297,76 @@ class DashboardHtmlFormatter(BaseFormatter):
                 # Add file node
                 parent_path = "/".join(path_parts[:-1]) if len(path_parts) > 1 else ""
                 parent_node = directory_nodes.get(parent_path, tree)
-                
+
                 # Get worst severity for file (with safe access)
                 severity_values = []
                 for f in issues:
                     try:
-                        if hasattr(f, 'severity') and f.severity and hasattr(f.severity, 'value'):
+                        if (
+                            hasattr(f, "severity")
+                            and f.severity
+                            and hasattr(f.severity, "value")
+                        ):
                             severity_values.append(f.severity.value.lower())
-                    except:
-                        continue
-                
+                    except Exception as e:
+                        logger.debug(f"Error processing severity for finding: {e}")
+
                 worst_severity = "low"  # default
                 if severity_values:
                     worst_severity = max(
                         severity_values,
-                        key=lambda x: {"critical": 4, "high": 3, "medium": 2, "low": 1}.get(x, 0)
+                        key=lambda x: {
+                            "critical": 4,
+                            "high": 3,
+                            "medium": 2,
+                            "low": 1,
+                        }.get(x, 0),
                     )
-                
+
                 # Build findings data safely
                 findings_data = []
                 for f in issues:
                     try:
                         finding_data = {
-                            "id": getattr(f, 'id', 'unknown'),
-                            "title": getattr(f, 'title', 'Unknown Issue'),
-                            "description": getattr(f, 'description', ''),
-                            "severity": f.severity.value if hasattr(f, 'severity') and f.severity else "unknown",
-                            "line": getattr(f.location, 'line_start', None) if hasattr(f, 'location') and f.location else None,
-                            "remediation": getattr(f, 'remediation', '') or ""
+                            "id": getattr(f, "id", "unknown"),
+                            "title": getattr(f, "title", "Unknown Issue"),
+                            "description": getattr(f, "description", ""),
+                            "severity": (
+                                f.severity.value
+                                if hasattr(f, "severity") and f.severity
+                                else "unknown"
+                            ),
+                            "line": (
+                                getattr(f.location, "line_start", None)
+                                if hasattr(f, "location") and f.location
+                                else None
+                            ),
+                            "remediation": getattr(f, "remediation", "") or "",
                         }
                         findings_data.append(finding_data)
                     except Exception as e:
-                        print(f"Warning: Error processing finding for file tree: {e}")
+                        logger.warning(f"Error processing finding for file tree: {e}")
                         continue
-                
+
                 file_node = {
                     "name": path_parts[-1] if path_parts else "unknown_file",
                     "type": "file",
                     "path": file_path,
                     "issues": len(issues),
                     "worst_severity": worst_severity,
-                    "findings": findings_data
+                    "findings": findings_data,
                 }
                 parent_node["children"].append(file_node)
-                
+
             except Exception as e:
-                print(f"Warning: Error processing file path {file_path}: {e}")
+                logger.warning(f"Error processing file path {file_path}: {e}")
                 continue
 
         # Calculate directory issue counts
         def calculate_directory_issues(node):
             if node["type"] == "file":
                 return node["issues"]
-            
+
             total = 0
             for child in node["children"]:
                 total += calculate_directory_issues(child)
@@ -296,35 +376,43 @@ class DashboardHtmlFormatter(BaseFormatter):
         calculate_directory_issues(tree)
         return tree
 
-    def _generate_insights_data(self, findings: List[Finding], metadata: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_insights_data(
+        self, findings: List[Finding], metadata: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Generate insights data for the dashboard."""
         try:
             severity_counts = metadata.get("severity_counts", {})
-            
+
             # Safely convert severity counts
             severity_counts_lower = {}
             try:
-                severity_counts_lower = {str(k).lower(): int(v) for k, v in severity_counts.items() if v is not None}
+                severity_counts_lower = {
+                    str(k).lower(): int(v)
+                    for k, v in severity_counts.items()
+                    if v is not None
+                }
             except Exception:
                 severity_counts_lower = {}
-                
+
             total_issues = sum(severity_counts_lower.values())
-            
+
             if total_issues == 0:
                 return {
-                    "alerts": ["✅ No security issues found - Repository appears secure!"],
+                    "alerts": [
+                        "✅ No security issues found - Repository appears secure!"
+                    ],
                     "top_types": [],
                     "top_files": [],
-                    "recommendations": []
+                    "recommendations": [],
                 }
-            
+
             # Priority alerts
             alerts = []
             critical = severity_counts_lower.get("critical", 0)
             high = severity_counts_lower.get("high", 0)
             medium = severity_counts_lower.get("medium", 0)
             low = severity_counts_lower.get("low", 0)
-            
+
             if critical > 0:
                 alerts.append(f"🚨 {critical} CRITICAL")
             if high > 0:
@@ -333,38 +421,57 @@ class DashboardHtmlFormatter(BaseFormatter):
                 alerts.append(f"📊 {medium} MEDIUM")
             if low > 0:
                 alerts.append(f"🐛 {low} LOW")
-            
+
             # Top issue types
             type_counts = metadata.get("type_counts", {})
             top_types_formatted = []
             try:
                 if type_counts:
-                    top_types = sorted(type_counts.items(), key=lambda x: int(x[1]) if x[1] is not None else 0, reverse=True)[:2]
-                    top_types_formatted = [f"{str(issue_type).replace('_', ' ').title()}: {count}" for issue_type, count in top_types]
+                    top_types = sorted(
+                        type_counts.items(),
+                        key=lambda x: int(x[1]) if x[1] is not None else 0,
+                        reverse=True,
+                    )[:2]
+                    top_types_formatted = [
+                        f"{str(issue_type).replace('_', ' ').title()}: {count}"
+                        for issue_type, count in top_types
+                    ]
             except Exception as e:
-                print(f"Warning: Error processing top types: {e}")
-            
+                logger.warning(f"Error processing top types: {e}")
+
             # Most affected files
-            file_issue_counts = {}
+            file_issue_counts: Dict[str, int] = {}
             try:
                 for finding in findings:
                     try:
-                        if hasattr(finding, 'location') and finding.location and hasattr(finding.location, 'path') and finding.location.path:
+                        if (
+                            hasattr(finding, "location")
+                            and finding.location
+                            and hasattr(finding.location, "path")
+                            and finding.location.path
+                        ):
                             file_path = str(finding.location.path)
-                            file_issue_counts[file_path] = file_issue_counts.get(file_path, 0) + 1
-                    except Exception:
-                        continue
+                            file_issue_counts[file_path] = (
+                                file_issue_counts.get(file_path, 0) + 1
+                            )
+                    except Exception as e:
+                        logger.debug(f"Error processing severity for finding: {e}")
             except Exception as e:
-                print(f"Warning: Error processing file counts: {e}")
-            
+                logger.warning(f"Error processing file counts: {e}")
+
             top_files_formatted = []
             try:
                 if file_issue_counts:
-                    top_files = sorted(file_issue_counts.items(), key=lambda x: x[1], reverse=True)[:2]
-                    top_files_formatted = [f"{Path(file_path).name}: {count}" for file_path, count in top_files]
+                    top_files = sorted(
+                        file_issue_counts.items(), key=lambda x: x[1], reverse=True
+                    )[:2]
+                    top_files_formatted = [
+                        f"{Path(file_path).name}: {count}"
+                        for file_path, count in top_files
+                    ]
             except Exception as e:
-                print(f"Warning: Error processing top files: {e}")
-            
+                logger.warning(f"Error processing top files: {e}")
+
             # Security recommendations
             recommendations = []
             try:
@@ -375,22 +482,22 @@ class DashboardHtmlFormatter(BaseFormatter):
                 if total_issues > 10:
                     recommendations.append("Consider automated CI/CD checks")
             except Exception as e:
-                print(f"Warning: Error generating recommendations: {e}")
-            
+                logger.warning(f"Error generating recommendations: {e}")
+
             return {
                 "alerts": alerts,
                 "top_types": top_types_formatted,
                 "top_files": top_files_formatted,
-                "recommendations": recommendations
+                "recommendations": recommendations,
             }
-            
+
         except Exception as e:
-            print(f"Warning: Error in insights generation: {e}")
+            logger.warning(f"Error in insights generation: {e}")
             return {
                 "alerts": ["Error generating insights"],
                 "top_types": [],
                 "top_files": [],
-                "recommendations": []
+                "recommendations": [],
             }
 
     def _get_dashboard_html_template(self) -> str:
@@ -620,7 +727,7 @@ class DashboardHtmlFormatter(BaseFormatter):
                 grid-template-columns: 1fr;
                 grid-template-rows: auto auto auto auto;
             }
-            
+
             .header, .insights {
                 grid-column: 1;
             }
@@ -629,7 +736,7 @@ class DashboardHtmlFormatter(BaseFormatter):
 </head>
 <body>
     <button class="export-button" onclick="exportReport()">📄 Export Report</button>
-    
+
     <div class="dashboard">
         <div class="header">
             <div class="scan-info">
@@ -675,7 +782,7 @@ class DashboardHtmlFormatter(BaseFormatter):
         const metadata = {{METADATA_JSON}};
         const fileTree = {{FILE_TREE_JSON}};
         const insights = {{INSIGHTS_JSON}};
-        
+
         let selectedFile = null;
         let currentIssueIndex = 0;
 
@@ -683,7 +790,7 @@ class DashboardHtmlFormatter(BaseFormatter):
         function initializeDashboard() {
             renderInsights();
             renderFileTree();
-            
+
             // Add keyboard navigation
             document.addEventListener('keydown', handleKeyPress);
         }
@@ -691,23 +798,23 @@ class DashboardHtmlFormatter(BaseFormatter):
         function renderInsights() {
             const insightsContent = document.getElementById('insights-content');
             let html = '';
-            
+
             if (insights.alerts.length > 0) {
                 html += '<div style="margin-bottom: 0.5rem;">' + insights.alerts.join(' | ') + '</div>';
             }
-            
+
             if (insights.top_types.length > 0) {
                 html += '<div><strong>🎯 Top Issues:</strong> ' + insights.top_types.join(' | ') + '</div>';
             }
-            
+
             if (insights.top_files.length > 0) {
                 html += '<div><strong>📁 Top Files:</strong> ' + insights.top_files.join(' | ') + '</div>';
             }
-            
+
             if (insights.recommendations.length > 0) {
                 html += '<div><strong>🛡️ Actions:</strong> ' + insights.recommendations.join(' | ') + '</div>';
             }
-            
+
             insightsContent.innerHTML = html;
         }
 
@@ -719,16 +826,16 @@ class DashboardHtmlFormatter(BaseFormatter):
         function renderTreeNode(node, depth) {
             let html = '';
             const indent = '  '.repeat(depth);
-            
+
             if (node.type === 'directory') {
                 const hasChildren = node.children && node.children.length > 0;
                 const expandIcon = hasChildren ? '<span class="expand-icon">▶</span>' : '<span class="expand-icon"> </span>';
                 const issueCount = node.issues > 0 ? ` (${node.issues})` : '';
-                
+
                 html += `<div class="tree-item directory" data-path="${node.path || ''}" onclick="toggleDirectory('${node.path || ''}')">
                     ${indent}${expandIcon}📁 ${node.name}${issueCount}
                 </div>`;
-                
+
                 if (hasChildren) {
                     html += `<div class="tree-children" id="children-${node.path || 'root'}">`;
                     for (const child of node.children) {
@@ -742,14 +849,14 @@ class DashboardHtmlFormatter(BaseFormatter):
                     ${indent}📄 ${node.name} (${node.issues})
                 </div>`;
             }
-            
+
             return html;
         }
 
         function toggleDirectory(path) {
             const childrenElement = document.getElementById(`children-${path || 'root'}`);
             const expandIcon = event.target.querySelector('.expand-icon');
-            
+
             if (childrenElement) {
                 childrenElement.classList.toggle('expanded');
                 if (expandIcon) {
@@ -761,12 +868,12 @@ class DashboardHtmlFormatter(BaseFormatter):
         function selectFile(filePath) {
             // Clear previous selection
             document.querySelectorAll('.tree-item.selected').forEach(el => el.classList.remove('selected'));
-            
+
             // Select new file
             event.target.classList.add('selected');
             selectedFile = filePath;
             currentIssueIndex = 0;
-            
+
             // Find file in tree to get its findings
             const fileNode = findFileInTree(fileTree, filePath);
             if (fileNode && fileNode.findings) {
@@ -778,36 +885,36 @@ class DashboardHtmlFormatter(BaseFormatter):
             if (node.type === 'file' && node.path === targetPath) {
                 return node;
             }
-            
+
             if (node.children) {
                 for (const child of node.children) {
                     const result = findFileInTree(child, targetPath);
                     if (result) return result;
                 }
             }
-            
+
             return null;
         }
 
         function renderIssueDetails(issues) {
             const issueContent = document.getElementById('issue-content');
-            
+
             if (!issues || issues.length === 0) {
                 issueContent.innerHTML = '<div class="help-text">No issues found in selected file</div>';
                 return;
             }
-            
+
             const issue = issues[currentIssueIndex];
             const filename = selectedFile ? selectedFile.split('/').pop() : 'Unknown';
             const navigationInfo = issues.length > 1 ? ` (${currentIssueIndex + 1}/${issues.length})` : '';
             const navHint = issues.length > 1 ? ' | Use navigation buttons below' : '';
-            
+
             let html = `
                 <div class="issue-header">
                     <strong>${filename}${navigationInfo}</strong>${navHint}
                 </div>
             `;
-            
+
             if (issues.length > 1) {
                 html += `
                     <div class="issue-navigation">
@@ -822,7 +929,7 @@ class DashboardHtmlFormatter(BaseFormatter):
                     </div>
                 `;
             }
-            
+
             const severityClass = `severity-${issue.severity}`;
             html += `
                 <div class="issue-content">
@@ -830,21 +937,21 @@ class DashboardHtmlFormatter(BaseFormatter):
                         <span class="${severityClass}"><strong>${issue.severity.toUpperCase()}</strong></span> - ${issue.title}
                     </div>
             `;
-            
+
             if (issue.line) {
                 html += `<div style="margin-bottom: 0.5rem;"><strong>📍 Line ${issue.line}</strong></div>`;
             }
-            
+
             if (issue.description) {
                 const desc = issue.description.length > 150 ? issue.description.substring(0, 150) + '...' : issue.description;
                 html += `<div style="margin-bottom: 0.5rem;">${desc}</div>`;
             }
-            
+
             if (issue.remediation) {
                 const remediation = issue.remediation.length > 150 ? issue.remediation.substring(0, 150) + '...' : issue.remediation;
                 html += `<div style="margin-bottom: 0.5rem; color: var(--primary-color);">💡 ${remediation}</div>`;
             }
-            
+
             html += '</div>';
             issueContent.innerHTML = html;
         }
@@ -886,12 +993,12 @@ class DashboardHtmlFormatter(BaseFormatter):
                 findings: findings,
                 timestamp: new Date().toISOString()
             };
-            
+
             // Create and download JSON report
             const dataStr = JSON.stringify(reportData, null, 2);
             const dataBlob = new Blob([dataStr], {type: 'application/json'});
             const url = URL.createObjectURL(dataBlob);
-            
+
             const link = document.createElement('a');
             link.href = url;
             link.download = `insect-report-${new Date().toISOString().split('T')[0]}.json`;
@@ -899,7 +1006,7 @@ class DashboardHtmlFormatter(BaseFormatter):
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-            
+
             alert('Report exported successfully!');
         }
 

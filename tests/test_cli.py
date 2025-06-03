@@ -17,7 +17,7 @@ def test_main_exit_code() -> None:
     """Test that main returns the correct exit code."""
     with patch("insect.cli.parse_args") as mock_parse_args, patch(
         "insect.core.scan_repository"
-    ) as mock_scan_repository:
+    ) as mock_scan_repository, patch("insect.dashboard.show_dashboard"):
         # Set up mock return values
         mock_scan_repository.return_value = (
             [],
@@ -51,6 +51,8 @@ def test_main_exit_code() -> None:
                 "clear_cache": False,
                 "no_progress": False,
                 "install_deps": False,
+                "no_dashboard": False,
+                "dashboard": True,
             },
         )
         result = main(["scan", "/path/to/repo"])
