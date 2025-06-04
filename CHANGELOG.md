@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2025-06-04
+
+### Fixed
+- `insect clone` now correctly creates subdirectories when `--output-dir` is not specified
+- Repository name extraction from URLs with trailing slashes
+- URL parsing logic now handles all common Git URL formats consistently
+
+### Improved
+- Robust repository name extraction with proper fallback logic
+- Better error handling for malformed repository URLs
+
 ## [0.1.6] - 2025-06-04
 
 ### Fixed

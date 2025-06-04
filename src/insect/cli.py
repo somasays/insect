@@ -287,7 +287,7 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
         "--image",
         "-i",
         type=str,
-        help="Docker image to use (defaults to 'python:3.10-slim')",
+        help="Docker image to use (defaults to 'python:3.13-slim')",
     )
 
     clone_parser.add_argument(
@@ -596,10 +596,16 @@ def main(args: Optional[List[str]] = None) -> int:
                 scan_args = parsed_args.scan_args.split()
 
             # Determine output directory
-            output_dir = (
-                parsed_args.output_dir
-                or Path.cwd() / Path(repo_url.split("/")[-1]).stem
-            )
+            if parsed_args.output_dir:
+                output_dir = parsed_args.output_dir
+            else:
+                # Extract repository name from URL, handling various formats
+                repo_name = repo_url.rstrip("/").split("/")[-1]
+                if repo_name.endswith(".git"):
+                    repo_name = repo_name[:-4]
+                if not repo_name:  # Fallback if extraction fails
+                    repo_name = "cloned-repo"
+                output_dir = Path.cwd() / repo_name
 
             # Run the scan in a container
             console.print(

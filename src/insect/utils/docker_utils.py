@@ -5,18 +5,19 @@ This module provides functionality to run Insect in Docker containers
 for isolated scanning of repositories.
 """
 
+import contextlib
 import json
 import logging
-import os
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
 # Default Docker image used for scanning
-DEFAULT_DOCKER_IMAGE = "python:3.10-slim"
+DEFAULT_DOCKER_IMAGE = "python:3.13-slim"
 
 # Dockerfile template for Insect image
 DOCKERFILE_TEMPLATE = """
@@ -33,8 +34,8 @@ RUN apt-get update && apt-get install -y \\
 RUN pip install --no-cache-dir --upgrade pip && \\
     pip install --no-cache-dir bandit semgrep gitpython yara-python
 
-# Install Insect
-RUN pip install --no-cache-dir insect
+# Install Insect with specific version and verbose output for debugging
+RUN pip install --no-cache-dir --upgrade --verbose insect
 
 WORKDIR /scan
 
@@ -143,11 +144,13 @@ def run_scan_in_container(
         results_file = output_dir / "scan_results.json"
         commit_file = output_dir / "commit.txt"
 
-        # Build the Docker command
+        # Build the Docker command - use container name for file copying
+        container_name = f"insect-scan-{int(time.time())}"
         docker_cmd = [
             "docker",
             "run",
-            "--rm",
+            "--name",
+            container_name,
             "-v",
             f"{output_dir.absolute()}:/output",
             image_name,
@@ -170,10 +173,13 @@ def run_scan_in_container(
         container_cmd.append("git rev-parse HEAD > /output/commit.txt")
 
         # Run the scan and save results
-        scan_command = "insect scan . --format json > /output/scan_results.json"
+        scan_command = "insect scan . --format json --output /output/scan_results.json"
         if scan_args:
             scan_command += " " + " ".join(scan_args)
         container_cmd.append(scan_command)
+
+        # Ensure files are synced to volume mount (helps with Docker Desktop on macOS)
+        container_cmd.append("sync")
 
         # Combine everything into a single command
         full_command = " && ".join(container_cmd)
@@ -191,25 +197,86 @@ def run_scan_in_container(
                 check=False,  # Don't raise exception on non-zero exit
             )
 
+            logger.debug(f"Container stdout: {result.stdout}")
+            logger.debug(f"Container stderr: {result.stderr}")
+            logger.debug(f"Container exit code: {result.returncode}")
+
             if result.returncode != 0:
                 logger.error(
                     f"Container command failed with exit code {result.returncode}"
                 )
                 logger.error(f"Error output: {result.stderr}")
+                logger.error(f"Standard output: {result.stdout}")
+                # Clean up container if it still exists
+                with contextlib.suppress(Exception):
+                    subprocess.run(
+                        ["docker", "rm", "-f", container_name], capture_output=True
+                    )
                 return False, {}, ""
 
-            logger.debug(f"Output directory contents: {os.listdir(temp_dir)}")
+            # Give Docker Desktop time to sync files on macOS
+            time.sleep(1)
+
+            # If volume mount didn't work (macOS Docker Desktop issue), copy files from container
+            if not results_file.exists():
+                logger.info(
+                    "Volume mount didn't sync files, attempting to copy from container"
+                )
+                try:
+                    # Copy scan results from container
+                    copy_result = subprocess.run(
+                        [
+                            "docker",
+                            "cp",
+                            f"{container_name}:/output/scan_results.json",
+                            str(results_file),
+                        ],
+                        capture_output=True,
+                        text=True,
+                    )
+
+                    if copy_result.returncode == 0:
+                        logger.info("Successfully copied scan results from container")
+                    else:
+                        logger.error(
+                            f"Failed to copy scan results: {copy_result.stderr}"
+                        )
+
+                    # Copy commit hash from container
+                    copy_commit_result = subprocess.run(
+                        [
+                            "docker",
+                            "cp",
+                            f"{container_name}:/output/commit.txt",
+                            str(commit_file),
+                        ],
+                        capture_output=True,
+                        text=True,
+                    )
+
+                    if copy_commit_result.returncode == 0:
+                        logger.info("Successfully copied commit hash from container")
+
+                except Exception as e:
+                    logger.error(f"Failed to copy files from container: {e}")
+                finally:
+                    # Clean up container
+                    with contextlib.suppress(Exception):
+                        subprocess.run(
+                            ["docker", "rm", "-f", container_name], capture_output=True
+                        )
 
             # Read scan results
             if results_file.exists():
                 with open(results_file) as f:
-                    # Skip the first line (it's the "Repository to scan" message)
-                    f.readline()
-                    # Parse the JSON output
+                    # Parse the JSON output directly
                     try:
                         scan_results = json.load(f)
                     except json.JSONDecodeError as e:
                         logger.error(f"Failed to parse scan results: {e}")
+                        # Log file contents for debugging
+                        f.seek(0)
+                        logger.debug(f"Results file contents: {f.read()}")
                         return False, {}, ""
 
                 # Read commit hash
@@ -217,6 +284,12 @@ def run_scan_in_container(
                 if commit_file.exists():
                     with open(commit_file) as f:
                         commit_hash = f.read().strip()
+
+                # Clean up container
+                with contextlib.suppress(Exception):
+                    subprocess.run(
+                        ["docker", "rm", "-f", container_name], capture_output=True
+                    )
 
                 return True, scan_results, commit_hash
             logger.error(f"Scan results file not found: {results_file}")
