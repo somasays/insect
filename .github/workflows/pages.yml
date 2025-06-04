@@ -5,6 +5,9 @@ on:
     workflows: ["Release"]
     types: [completed]
     branches: [main]
+  workflow_dispatch:
+  repository_dispatch:
+    types: [deploy-docs]
 
 permissions:
   contents: read
@@ -17,7 +20,7 @@ concurrency:
 
 jobs:
   build:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'repository_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,10 +29,14 @@ jobs:
       - name: Extract version from latest release
         id: version
         run: |
-          # Get the latest release tag from the workflow that triggered this
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          echo "version=$LATEST_TAG" >> $GITHUB_OUTPUT
-          echo "Latest version: $LATEST_TAG"
+          # Get version from repository dispatch payload or latest tag
+          if [ "${{ github.event_name }}" = "repository_dispatch" ] && [ -n "${{ github.event.client_payload.version }}" ]; then
+            VERSION="${{ github.event.client_payload.version }}"
+          else
+            VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Latest version: $VERSION"
       
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1

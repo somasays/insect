@@ -94,3 +94,10 @@ jobs:
         body: ${{ steps.release_notes.outputs.release_notes }}
         draft: false
         prerelease: false
+
+    - name: Trigger documentation deployment
+      uses: peter-evans/repository-dispatch@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        event-type: deploy-docs
+        client-payload: '{"version": "${{ github.ref_name }}"}'
