@@ -350,13 +350,6 @@ class PythonStaticAnalyzer(BaseAnalyzer):
                         )
 
                     snippet = extra.get("lines", "")
-                    # if not snippet.strip():
-                    #      try:
-                    #          with open(file_path, 'r', encoding='utf-8', errors='ignore') as f_lines:
-                    #               lines = f_lines.readlines()
-                    #          _, _, snippet = self._get_snippet_context(lines, line_start - 1)
-                    #      except Exception:
-                    #           snippet = "[Snippet unavailable]"
 
                     findings.append(
                         Finding(

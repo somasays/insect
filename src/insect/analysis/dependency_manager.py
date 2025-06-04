@@ -411,8 +411,6 @@ def generate_dependency_report(
     Returns:
         If output_path is None, the report as a string. Otherwise, None.
     """
-    # TODO: Implement full report generation
-
     dependencies = get_dependencies_status()
 
     if format_type == "text":
