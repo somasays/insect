@@ -4,6 +4,9 @@ description: A security-focused CLI tool designed to scan Git repositories for p
 url: "https://somasays.github.io"
 baseurl: "/insect"
 
+# Version information (set by CI/CD)
+version: ENV['INSECT_VERSION'] || 'development'
+
 # Build settings
 markdown: kramdown
 highlighter: rouge

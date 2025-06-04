@@ -57,14 +57,40 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: twine upload dist/*
 
+    - name: Get current date
+      id: date
+      run: echo "date=$(date -u)" >> $GITHUB_OUTPUT
+
+    - name: Extract release notes
+      id: release_notes
+      run: |
+        VERSION="${{ github.ref_name }}"
+        RELEASE_FILE="docs/releases/RELEASE_NOTES_${VERSION}.md"
+        
+        if [ -f "$RELEASE_FILE" ]; then
+          echo "Found release notes file: $RELEASE_FILE"
+          # Read the file content and escape for GitHub Actions
+          CONTENT=$(cat "$RELEASE_FILE")
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        else
+          echo "No release notes file found for $VERSION, using default"
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          echo "## Changes in this Release" >> $GITHUB_OUTPUT
+          echo "- Security scanner improvements" >> $GITHUB_OUTPUT
+          echo "- PyPI package release" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "**Version**: $VERSION" >> $GITHUB_OUTPUT
+          echo "**Build Date**: $(date -u)" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
+
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ github.ref_name }}
         name: Release ${{ github.ref_name }}
-        body: |
-          ## Changes in this Release
-          - Security scanner improvements
-          - PyPI package release
+        body: ${{ steps.release_notes.outputs.release_notes }}
         draft: false
         prerelease: false
