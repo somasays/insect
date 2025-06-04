@@ -48,7 +48,8 @@ class ScanSummaryWidget(Static):
 
         # Create a more compact horizontal layout with full path
         yield Static(
-            f"🔍 [bold]{display_path}[/bold] | 📁 {files_scanned:,} files | ⏱️ {duration:.1f}s | 🐛 [bold]{finding_count:,} issues[/bold]",
+            f"🔍 [bold]{display_path}[/bold] | 📁 {files_scanned:,} files | "
+            f"⏱️ {duration:.1f}s | 🐛 [bold]{finding_count:,} issues[/bold]",
             classes="scan-info",
         )
 
@@ -147,7 +148,7 @@ class FileExplorerWidget(Tree):
         # Create all necessary directory nodes first
         for relative_file_path in self._file_issues:
             path_parts = Path(relative_file_path).parts
-            # Create directory nodes for each parent directory (excluding the file itself)
+            # Create directory nodes for each parent directory
             for i in range(len(path_parts) - 1):
                 dir_path = "/".join(path_parts[: i + 1])
                 if dir_path and dir_path not in directory_nodes:
@@ -364,10 +365,10 @@ class IssueDetailWidget(VerticalScroll):
             )
 
             # Location info with line number prominently displayed
-            if hasattr(issue.location, "line") and issue.location.line:
+            if hasattr(issue.location, "line_start") and issue.location.line_start:
                 self.mount(
                     Static(
-                        f"[bold]📍 Line {issue.location.line}[/bold]",
+                        f"[bold]📍 Line {issue.location.line_start}[/bold]",
                         classes="line-info",
                     )
                 )
@@ -412,7 +413,7 @@ class IssueDetailWidget(VerticalScroll):
             self._refresh_content()
 
 
-class SummaryInsightsWidget(Static):
+class SummaryInsightsWidget(VerticalScroll):
     """Widget displaying key insights and important summaries from the scan."""
 
     def __init__(self, findings: List[Finding], metadata: Dict[str, Any], **kwargs):
@@ -429,7 +430,8 @@ class SummaryInsightsWidget(Static):
 
         if total_issues == 0:
             yield Static(
-                "[green]✅ No security issues found - Repository appears secure![/green]"
+                "[green]✅ No security issues found - "
+                "Repository appears secure![/green]"
             )
             return
 
@@ -460,7 +462,7 @@ class SummaryInsightsWidget(Static):
                 :2
             ]
             type_summary = [
-                f"{issue_type.replace('_', ' ').title()}: {count}"
+                f"{issue_type.replace('_', ' ').capitalize()}: {count}"
                 for issue_type, count in top_types
             ]
             if type_summary:
@@ -492,7 +494,9 @@ class SummaryInsightsWidget(Static):
         recommendations = []
         if critical > 0 or high > 0:
             recommendations.append("Address critical/high issues first")
-        if "secrets" in str(type_counts.keys()).lower():
+        # Check if any secret-related issues exist
+        secret_count = type_counts.get("SECRET", 0) + type_counts.get("secret", 0)
+        if secret_count > 0:
             recommendations.append("Rotate exposed secrets")
         if total_issues > 10:
             recommendations.append("Consider automated CI/CD checks")
@@ -547,24 +551,22 @@ class InsectDashboard(App):
     Screen {
         layout: grid;
         grid-size: 2 3;
-        grid-gutter: 0 1;
-        grid-rows: auto auto 1fr;
+        grid-gutter: 1 1;
+        grid-rows: 4 10 1fr;
     }
 
     #scan-summary {
         column-span: 2;
-        height: auto;
-        max-height: 6;
+        height: 4;
         border: solid $primary;
-        margin-bottom: 1;
+        padding: 0 1;
     }
 
     #insights-summary {
         column-span: 2;
-        height: auto;
-        max-height: 10;
+        height: 10;
         border: solid $warning;
-        margin-bottom: 1;
+        padding: 1;
         overflow: auto;
     }
 
@@ -580,7 +582,12 @@ class InsectDashboard(App):
 
     .scan-info {
         margin: 0 1;
-        padding: 0;
+        padding: 0 1;
+    }
+
+    .risk-level {
+        margin: 0 1;
+        padding: 0 1;
     }
 
     .file-header {
@@ -613,6 +620,7 @@ class InsectDashboard(App):
 
     .section-header {
         margin-bottom: 1;
+        padding: 0 1;
     }
 
     .line-info {
@@ -620,6 +628,11 @@ class InsectDashboard(App):
         padding: 1;
         margin: 0;
         border-left: thick $warning;
+    }
+
+    SummaryInsightsWidget Static {
+        margin: 0 1;
+        padding: 0 1;
     }
     """
 
@@ -644,6 +657,7 @@ class InsectDashboard(App):
 
         with Container(id="scan-summary"):
             yield ScanSummaryWidget(self.metadata)
+            yield RiskOverviewWidget(self.metadata)
 
         with Container(id="insights-summary"):
             yield SummaryInsightsWidget(self.findings, self.metadata)
