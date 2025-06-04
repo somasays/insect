@@ -347,7 +347,7 @@ REPOS_FILE="repositories.txt"
 WORKERS=4
 
 parallel -j$WORKERS --colsep ' ' \
-    'insect clone {1} --report-path reports/{2}-{%}.json' \
+    'insect clone {1} --report-path reports/{2}-{#}.json' \
     :::: "$REPOS_FILE"
 ```
 

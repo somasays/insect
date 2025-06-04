@@ -482,7 +482,7 @@ Insect's caching system provides significant performance benefits for repeated s
      uses: actions/cache@v2
      with:
        path: .insect/cache
-       key: ${{ runner.os }}-insect-${{ hashFiles('**/*.py', '**/*.js', '**/*.sh') }}
+       key: {% raw %}${{ runner.os }}-insect-${{ hashFiles('**/*.py', '**/*.js', '**/*.sh') }}{% endraw %}
    ```
 
 4. **Clearing the Cache**: If you suspect cache corruption or want to start fresh:
