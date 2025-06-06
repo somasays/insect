@@ -29,10 +29,15 @@ class ScanSummaryWidget(Static):
 
     def compose(self) -> ComposeResult:
         repo_path = str(self.metadata.get("repository", "Unknown"))
-        # Expand relative paths and show the full scanned path
+        # Handle URLs and local paths differently
         if repo_path != "Unknown":
-            expanded_path = Path(repo_path).expanduser().resolve()
-            display_path = str(expanded_path)
+            if repo_path.startswith(("http://", "https://", "git://", "ssh://")):
+                # This is a URL, display as-is
+                display_path = repo_path
+            else:
+                # This is a local path, show just the directory name
+                path_obj = Path(repo_path)
+                display_path = path_obj.name if path_obj.name else str(path_obj)
         else:
             display_path = "Unknown"
 
@@ -108,10 +113,19 @@ class FileExplorerWidget(Tree):
     """File explorer widget showing repository structure with issue counts."""
 
     def __init__(self, findings: List[Finding], metadata: Dict[str, Any], **kwargs):
-        # Get actual repository name from expanded path
+        # Get actual repository name from URL or path
         repo_path = metadata.get("repository", ".")
-        expanded_path = Path(repo_path).expanduser().resolve()
-        repo_name = expanded_path.name if expanded_path.name else "Repository"
+        if repo_path.startswith(("http://", "https://", "git://", "ssh://")):
+            # Extract repository name from URL
+            repo_name = repo_path.rstrip("/").split("/")[-1]
+            if repo_name.endswith(".git"):
+                repo_name = repo_name[:-4]
+            if not repo_name:
+                repo_name = "Repository"
+        else:
+            # This is a local path - always show just the directory name
+            path_obj = Path(repo_path)
+            repo_name = path_obj.name if path_obj.name else "Repository"
         super().__init__(repo_name, **kwargs)
         self.findings = findings
         self.metadata = metadata
@@ -121,7 +135,11 @@ class FileExplorerWidget(Tree):
 
     def _build_file_tree(self):
         """Build the file tree with issue counts."""
-        # Group findings by file
+        # Get the repository root to make paths relative
+        repo_path = self.metadata.get("repository", ".")
+        repo_root = Path(repo_path).resolve()
+        
+        # Group findings by file (convert to relative paths)
         for finding in self.findings:
             if (
                 hasattr(finding, "location")
@@ -129,10 +147,17 @@ class FileExplorerWidget(Tree):
                 and hasattr(finding.location, "path")
                 and finding.location.path
             ):
-                file_path = str(finding.location.path)
-                if file_path not in self._file_issues:
-                    self._file_issues[file_path] = []
-                self._file_issues[file_path].append(finding)
+                abs_file_path = Path(finding.location.path).resolve()
+                try:
+                    # Convert absolute path to relative path from repo root
+                    relative_file_path = str(abs_file_path.relative_to(repo_root))
+                except ValueError:
+                    # If path is not relative to repo root, use as-is
+                    relative_file_path = str(finding.location.path)
+                
+                if relative_file_path not in self._file_issues:
+                    self._file_issues[relative_file_path] = []
+                self._file_issues[relative_file_path].append(finding)
 
         if not self._file_issues:
             # If no files have issues, show a message

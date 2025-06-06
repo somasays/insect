@@ -259,7 +259,7 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
     clone_parser.add_argument(
         "repo_url",
         type=str,
-        help="URL of the git repository to clone and scan",
+        help="HTTPS URL of the git repository to clone and scan (SSH URLs not supported)",
     )
 
     clone_parser.add_argument(
@@ -287,7 +287,7 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
         "--image",
         "-i",
         type=str,
-        help="Docker image to use (defaults to 'python:3.10-slim')",
+        help="Docker image to use (defaults to 'python:3.13-slim')",
     )
 
     clone_parser.add_argument(
@@ -586,6 +586,24 @@ def main(args: Optional[List[str]] = None) -> int:
                 return 1
 
             repo_url = parsed_args.repo_url
+
+            # Validate that the repository URL is HTTPS (SSH not supported for security reasons)
+            if not repo_url.startswith("https://"):
+                if repo_url.startswith(("git@", "ssh://")) or "@" in repo_url:
+                    console.print(
+                        f"[bold red]{SECURITY_ICONS['cross']} SSH URLs are not supported for security reasons.[/bold red]\n"
+                        f"Please use the HTTPS URL instead.\n"
+                        f"Example: If your SSH URL is [cyan]git@github.com:user/repo.git[/cyan]\n"
+                        f"Use: [green]https://github.com/user/repo.git[/green]"
+                    )
+                else:
+                    console.print(
+                        f"[bold red]{SECURITY_ICONS['cross']} Only HTTPS URLs are supported.[/bold red]\n"
+                        f"Please provide a valid HTTPS git repository URL.\n"
+                        f"Example: [green]https://github.com/user/repo.git[/green]"
+                    )
+                return 1
+
             branch = parsed_args.branch
             commit = parsed_args.commit
             image = parsed_args.image
@@ -596,10 +614,16 @@ def main(args: Optional[List[str]] = None) -> int:
                 scan_args = parsed_args.scan_args.split()
 
             # Determine output directory
-            output_dir = (
-                parsed_args.output_dir
-                or Path.cwd() / Path(repo_url.split("/")[-1]).stem
-            )
+            if parsed_args.output_dir:
+                output_dir = parsed_args.output_dir
+            else:
+                # Extract repository name from URL, handling various formats
+                repo_name = repo_url.rstrip("/").split("/")[-1]
+                if repo_name.endswith(".git"):
+                    repo_name = repo_name[:-4]
+                if not repo_name:  # Fallback if extraction fails
+                    repo_name = "cloned-repo"
+                output_dir = Path.cwd() / repo_name
 
             # Run the scan in a container
             console.print(
@@ -642,7 +666,33 @@ def main(args: Optional[List[str]] = None) -> int:
                 )
             else:
                 metadata = {}
-            findings = scan_results_dict.get("findings", [])
+            findings_raw = scan_results_dict.get("findings", [])
+
+            # Convert dictionary findings to Finding objects for dashboard
+            findings = []
+            if findings_raw:
+                from insect.finding import Finding
+
+                for finding_dict in findings_raw:
+                    if isinstance(finding_dict, dict):
+                        try:
+                            finding_obj = Finding.from_dict(finding_dict)
+                            # Fix file paths from container scan - convert absolute container paths to relative
+                            if finding_obj.location and finding_obj.location.path:
+                                path_str = str(finding_obj.location.path)
+                                # Remove container-specific prefixes like /scan/repo/
+                                if path_str.startswith("/scan/repo/"):
+                                    path_str = path_str[11:]  # Remove /scan/repo/
+                                elif path_str.startswith("/scan/"):
+                                    path_str = path_str[6:]  # Remove /scan/
+                                # Update the path
+                                finding_obj.location.path = Path(path_str)
+                            findings.append(finding_obj)
+                        except Exception as e:
+                            logger.warning(f"Failed to convert finding to object: {e}")
+                    else:
+                        # Already a Finding object
+                        findings.append(finding_dict)
 
             console.print(
                 f"\n[bold green]{SECURITY_ICONS['check']} Scan completed successfully in container[/bold green]"
@@ -669,6 +719,17 @@ def main(args: Optional[List[str]] = None) -> int:
                     f"[bold green]{SECURITY_ICONS['check']} Report saved to:[/bold green] {parsed_args.report_path}"
                 )
 
+            # Always show dashboard with scan results
+            from insect.dashboard import show_dashboard
+
+            # Update metadata to show the repository URL instead of local path
+            if isinstance(metadata, dict):
+                metadata["repository"] = repo_url
+
+            console.print(
+                f"\n[bold cyan]{SECURITY_ICONS['scan']} Displaying scan results dashboard...[/bold cyan]"
+            )
+            show_dashboard(findings, metadata)
             # If no issues were found or user confirmation
             should_clone = True
             if isinstance(metadata, dict) and metadata.get("finding_count", 0) > 0:
