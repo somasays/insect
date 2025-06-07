@@ -138,7 +138,7 @@ class FileExplorerWidget(Tree):
         # Get the repository root to make paths relative
         repo_path = self.metadata.get("repository", ".")
         repo_root = Path(repo_path).resolve()
-        
+
         # Group findings by file (convert to relative paths)
         for finding in self.findings:
             if (
@@ -154,7 +154,7 @@ class FileExplorerWidget(Tree):
                 except ValueError:
                     # If path is not relative to repo root, use as-is
                     relative_file_path = str(finding.location.path)
-                
+
                 if relative_file_path not in self._file_issues:
                     self._file_issues[relative_file_path] = []
                 self._file_issues[relative_file_path].append(finding)
