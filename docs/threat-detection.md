@@ -15,6 +15,7 @@ This document provides examples of malicious patterns and security threats that 
 - [Shell Script Security Issues](#shell-script-security-issues)
 - [Configuration Security Issues](#configuration-security-issues)
 - [Secret Detection](#secret-detection)
+- [Malicious Character Detection](#malicious-character-detection)
 - [Browser Data Theft Detection](#browser-data-theft-detection)
 - [Cryptocurrency Wallet Theft Detection](#cryptocurrency-wallet-theft-detection)
 
@@ -443,6 +444,341 @@ MIIEpAIBAAKCAQEA7bq/... [REDACTED] ...HwIDAQAB
 2. Store them securely in a key management service or environment variables
 3. Add key patterns to `.gitignore`
 4. Consider using a dedicated secrets management solution
+
+## Malicious Character Detection
+
+Insect can detect various malicious character attacks and code obfuscation techniques that are often used to hide malicious intent or bypass security controls. This protection helps identify sophisticated attacks that use Unicode manipulation and character encoding tricks.
+
+### Unicode Homograph Attacks
+
+**Malicious Code:**
+
+```python
+# Malicious code using Cyrillic characters that look like Latin
+def аuthenticate(user, password):  # 'а' is Cyrillic, not Latin 'a'
+    # This function looks legitimate but uses mixed scripts
+    if user == "admin" and password == "pаssword":  # Cyrillic 'а' again
+        return True
+    return False
+
+# Attacker's real function that bypasses authentication
+def authenticate(user, password):  # Real Latin characters
+    return True  # Always returns True - security bypass!
+```
+
+**What Insect Detects:**
+- Mixed Unicode scripts in identifiers (Latin mixed with Cyrillic/Greek)
+- Homograph characters that visually appear identical but have different Unicode values
+- Suspicious character combinations that could be used for spoofing
+
+**Why This is Dangerous:**
+- Code appears legitimate to human reviewers but behaves differently
+- Can be used to create backdoors that are nearly invisible
+- Bypasses many static analysis tools that don't check for Unicode issues
+
+**Remediation:**
+```python
+# Safe approach - use consistent character sets
+def authenticate(user, password):  # All Latin characters
+    if user == "admin" and password == "password":
+        return verify_credentials(user, password)
+    return False
+```
+
+### Invisible Character Attacks
+
+**Malicious Code:**
+
+```python
+# Code with zero-width characters that alter behavior
+def login​(username, password):  # Zero-width space after 'login'
+    if username == "admin":
+        return True​  # Zero-width space before comment
+    return False
+
+# This creates two different function signatures that look identical
+def login(username, password):  # No invisible characters
+    return verify_password(username, password)
+```
+
+**What Insect Detects:**
+- Zero-width space (U+200B)
+- Zero-width non-joiner (U+200C)
+- Zero-width joiner (U+200D)
+- Soft hyphens (U+00AD)
+- Other invisible Unicode format characters
+
+**Why This is Critical:**
+- Completely invisible to human code review
+- Can create function name collisions and unexpected behavior
+- Often used to hide malicious code in plain sight
+
+**Remediation:**
+- Use code editors that highlight invisible characters
+- Implement consistent code formatting and validation
+- Use static analysis tools that detect Unicode anomalies
+
+### Bidirectional Text Attacks
+
+**Malicious Code:**
+
+```python
+# Right-to-Left Override attack
+access_level = "user‮ ⁦// Check if admin⁩ "
+if access_level != "user":
+    grant_admin_access()
+
+# What the code actually contains vs. what it displays:
+# Actual: access_level != "user‮ ⁦// Check if admin⁩ "
+# Displays as: access_level != "user // Check if admin "
+```
+
+**What Insect Detects:**
+- Right-to-Left Override (RLO - U+202E)
+- Left-to-Right Override (LRO - U+202D)
+- Right-to-Left Isolate (RLI - U+2067)
+- Left-to-Right Isolate (LRI - U+2066)
+- Other bidirectional control characters
+
+**Why This is Critical:**
+- Can completely change how code appears to reviewers
+- Hides malicious logic within seemingly normal code
+- Exploits how text rendering works to deceive humans
+
+**Remediation:**
+```python
+# Safe approach - avoid bidirectional control characters
+access_level = "user"
+if access_level == "admin":
+    grant_admin_access()
+else:
+    grant_user_access()
+```
+
+### Path Traversal Character Encoding
+
+**Malicious Code:**
+
+```python
+# Various encoded path traversal attempts
+file_paths = [
+    "../../../etc/passwd",           # Standard traversal
+    "..\\..\\..\\windows\\system32", # Windows traversal
+    "%2e%2e%2f%2e%2e%2f%2e%2e%2f",  # URL encoded
+    "%252e%252e%252f",               # Double URL encoded
+    "....//....//....//",            # Overlong sequences
+]
+
+for path in file_paths:
+    read_file(path)  # Attempts to access system files
+```
+
+**What Insect Detects:**
+- Standard path traversal patterns (`../`, `..\\`)
+- URL encoded traversal (`%2e%2e%2f`)
+- Double encoded traversal (`%252e%252e%252f`)
+- Unicode normalization attacks
+- Overlong UTF-8 sequences
+
+**Why This is Dangerous:**
+- Can bypass path validation filters
+- Allows access to files outside intended directories
+- Often used to read sensitive system files
+
+**Remediation:**
+```python
+import os
+from pathlib import Path
+
+def safe_file_access(filename):
+    # Resolve and validate file path
+    base_dir = Path("/safe/directory")
+    file_path = (base_dir / filename).resolve()
+    
+    # Ensure path is within allowed directory
+    if not str(file_path).startswith(str(base_dir)):
+        raise ValueError("Invalid file path")
+    
+    return file_path
+```
+
+### Command Injection Character Sequences
+
+**Malicious Code:**
+
+```bash
+#!/bin/bash
+# Various command injection techniques
+USER_INPUT="safe_input; rm -rf /"          # Command separator
+COMMAND=`whoami`                            # Backtick execution
+RESULT=$(cat /etc/passwd)                   # Command substitution
+eval "echo $USER_INPUT"                     # Dynamic evaluation
+
+# Here document injection
+cat <<EOF
+$USER_INPUT
+EOF
+```
+
+**What Insect Detects:**
+- Command separators (`;`, `&`, `|`)
+- Backtick command execution
+- Command substitution (`$()`, `${}`)
+- Here document patterns
+- Shell metacharacters in strings
+
+**Why This is Critical:**
+- Allows arbitrary command execution
+- Can be used to escape application sandboxes
+- Often leads to complete system compromise
+
+**Remediation:**
+```bash
+#!/bin/bash
+# Safe approach - proper input validation and quoting
+USER_INPUT="$1"
+
+# Validate input doesn't contain dangerous characters
+if [[ "$USER_INPUT" =~ [';|&`$<>] ]]; then
+    echo "Invalid input detected"
+    exit 1
+fi
+
+# Use proper quoting
+echo "$USER_INPUT"
+
+# Or better yet, avoid shell altogether
+python3 -c "print('$USER_INPUT')"
+```
+
+### Malicious Filename Detection
+
+**Malicious Code:**
+
+```python
+import os
+
+# Dangerous Windows reserved device names
+dangerous_files = [
+    "CON.txt",      # Console device
+    "PRN.log",      # Printer device  
+    "AUX.dat",      # Auxiliary device
+    "NUL.tmp",      # Null device
+    "COM1.txt",     # Serial port
+    "LPT1.log",     # Parallel port
+]
+
+# Excessively long filenames (buffer overflow attempts)
+long_filename = "A" * 300 + ".txt"
+
+for filename in dangerous_files:
+    try:
+        with open(filename, 'w') as f:
+            f.write("malicious content")
+    except Exception:
+        pass  # Silently ignore errors
+```
+
+**What Insect Detects:**
+- Windows reserved device names (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
+- Excessively long filenames (>255 characters)
+- Filenames with dangerous characters
+- Unicode filename manipulation attempts
+
+**Why This is Dangerous:**
+- Reserved device names can cause system instability
+- Long filenames may cause buffer overflows
+- Can be used for denial of service attacks
+- May bypass security filters
+
+**Remediation:**
+```python
+import os
+import re
+from pathlib import Path
+
+def validate_filename(filename):
+    # Check for Windows reserved names
+    reserved_names = {
+        'CON', 'PRN', 'AUX', 'NUL',
+        'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 
+        'COM6', 'COM7', 'COM8', 'COM9',
+        'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5',
+        'LPT6', 'LPT7', 'LPT8', 'LPT9'
+    }
+    
+    name = Path(filename).stem.upper()
+    if name in reserved_names:
+        raise ValueError(f"Reserved filename: {filename}")
+    
+    # Check length
+    if len(filename) > 255:
+        raise ValueError("Filename too long")
+    
+    # Check for dangerous characters
+    if re.search(r'[<>:"|?*\x00-\x1f]', filename):
+        raise ValueError("Invalid characters in filename")
+    
+    return filename
+
+def safe_file_creation(filename, content):
+    safe_name = validate_filename(filename)
+    with open(safe_name, 'w') as f:
+        f.write(content)
+```
+
+### Configuration and Sensitivity Levels
+
+Insect's malicious character detection supports configurable sensitivity levels:
+
+**Low Sensitivity:**
+- Detects only the most obvious malicious patterns
+- Focuses on critical security issues
+- Minimal false positives
+
+**Medium Sensitivity (Default):**
+- Detects most common attack vectors
+- Balanced approach between detection and false positives
+- Includes Unicode homograph detection
+
+**High Sensitivity:**
+- Detects subtle encoding anomalies
+- Maximum security coverage
+- May have higher false positive rate
+
+**Configuration Example:**
+
+```toml
+[analyzers.malicious_character]
+enabled = true
+sensitivity = "medium"  # Options: "low", "medium", "high"
+```
+
+### Remediation Strategies
+
+**General Recommendations:**
+
+1. **Unicode Normalization**: Use Unicode normalization (NFC/NFD) consistently
+2. **Character Validation**: Implement strict character set validation for identifiers
+3. **Editor Configuration**: Use code editors that highlight invisible characters
+4. **Code Review**: Train reviewers to identify Unicode-based attacks
+5. **Static Analysis**: Use tools that detect Unicode anomalies and encoding issues
+
+**Development Best Practices:**
+
+1. **Consistent Encoding**: Use UTF-8 consistently throughout your codebase
+2. **Input Validation**: Validate all user input for suspicious character sequences
+3. **Path Sanitization**: Use secure path handling libraries
+4. **Command Safety**: Avoid dynamic command construction
+5. **Filename Validation**: Implement strict filename validation rules
+
+**Security Controls:**
+
+1. **Content Security Policy**: Implement CSP headers to prevent injection attacks
+2. **Input Sanitization**: Sanitize all user inputs at application boundaries
+3. **Encoding Detection**: Implement encoding detection and validation
+4. **Logging**: Log suspicious character sequences for security monitoring
+5. **Regular Audits**: Regularly audit code for Unicode-based vulnerabilities
 
 ## Browser Data Theft Detection
 

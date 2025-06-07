@@ -56,6 +56,7 @@ insect scan ./my-project --format html --output security-report.html
 
 - **🐳 Container Isolation**: Analyze untrusted code safely in Docker
 - **🔍 Comprehensive Detection**: Find malware, credential stealers, crypto miners
+- **🦄 Unicode Attack Detection**: Detect sophisticated character-based obfuscation
 - **🛡️ Pre-execution Analysis**: Detect threats before code runs
 - **📊 Detailed Reports**: Interactive HTML reports with threat analysis
 - **⚡ Multiple Formats**: Text, JSON, HTML output options
@@ -68,11 +69,42 @@ insect scan ./my-project --format html --output security-report.html
 - **Cryptocurrency Theft**: Wallet stealers, private key extractors, clipboard hijackers  
 - **System Compromise**: Command injection, privilege escalation, backdoors
 - **Data Exfiltration**: Secret harvesters, API key stealers, data miners
+- **Unicode Attacks**: Homograph attacks, invisible characters, bidirectional text manipulation
 
 ### Security Vulnerabilities
-- **Code Injection**: SQL injection, XSS, command injection
+- **Code Injection**: SQL injection, XSS, command injection, path traversal
+- **Character-based Attacks**: Unicode obfuscation, invisible backdoors, encoding abuse
 - **Insecure Configurations**: Hardcoded credentials, weak settings
 - **Dependency Issues**: Vulnerable libraries, supply chain risks
+
+## 🦄 Advanced Unicode Attack Detection
+
+Insect includes sophisticated detection for Unicode-based attacks that are invisible to human reviewers:
+
+### What It Detects
+- **Homograph Attacks**: Mixed scripts (Cyrillic 'а' vs Latin 'a') in identifiers
+- **Invisible Characters**: Zero-width spaces, format characters, hidden Unicode
+- **Bidirectional Text**: Right-to-Left Override attacks that hide malicious code
+- **Encoding Abuse**: Path traversal and injection via character encoding
+- **Malicious Filenames**: Reserved device names and dangerous file patterns
+
+### Example Detection
+```python
+# This looks like normal code but contains Cyrillic characters
+def аuthenticate(user, password):  # 'а' is Cyrillic U+0430, not Latin!
+    return True  # Bypasses real authentication
+
+# Invisible character injection
+def login​(user, pass):  # Zero-width space after 'login'
+    steal_credentials(user, pass)​  # Another hidden character
+```
+
+### Configuration
+```toml
+[analyzers.malicious_character]
+enabled = true
+sensitivity = "medium"  # Options: "low", "medium", "high"
+```
 
 ## 🚀 Real-World Examples
 
