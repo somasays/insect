@@ -133,6 +133,7 @@ from . import browser_theft_analyzer  # noqa: F401, E402
 from . import container_analyzer  # noqa: F401, E402
 from . import crypto_wallet_analyzer  # noqa: F401, E402
 from . import javascript_static_analyzer  # noqa: F401, E402
+from . import malicious_character_analyzer  # noqa: F401, E402
 from . import metadata_analyzer  # noqa: F401, E402
 from . import python_static_analyzer  # noqa: F401, E402
 from . import secret_analyzer  # noqa: F401, E402
