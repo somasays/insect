@@ -14,6 +14,7 @@ metadata = true
 secrets = true
 browser_theft = true
 crypto_wallet = true
+llm_exploitation = true
 
 # File pattern settings
 [patterns]
@@ -72,3 +73,11 @@ enable_private_key_detection = true
 enable_seed_phrase_detection = true
 enable_crypto_api_detection = true
 enable_address_enumeration_detection = true
+
+# LLM and MCP exploitation detection settings
+[llm_exploitation]
+sensitivity = "medium"  # Options: low, medium, high
+check_documentation = true  # Analyze README and documentation files
+check_hidden_instructions = true  # Detect Base64 and other encoded instructions
+api_abuse_detection = true  # Detect LLM API key harvesting attempts
+mcp_protocol_checks = true  # Check for MCP exploitation patterns
